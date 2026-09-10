@@ -1,0 +1,22 @@
+# Task List — GRE / MS University Application Deadline Tracker
+
+- [x] `[1/5] Core Setup & UI Foundations`
+  - [x] Create `index.html` structure with SaaS Dashboard layout, header, metrics, timeline, toolbar, modal dialogs, and detail drawer
+  - [x] Create `styles.css` design system with CSS variables, typography, glassmorphism, responsive grids, dark mode theme, and status badges
+- [x] `[2/5] Data Core & Excel Import Engine`
+  - [x] Implement `app.js` with auto-load and dynamic parser for `Colleges.xlsx` using SheetJS
+  - [x] Build initial pre-verified database with popular MS CS/DS programs (Purdue, UIUC, CMU, Georgia Tech, Columbia, NYU, USC, UT Austin, UCSD, Northeastern, etc.)
+  - [x] Implement robust column auto-mapping and persistence in `localStorage`
+- [x] `[3/5] Deadline Logic & Smart Requirements Engine`
+  - [x] Implement real-time deadline counter (`Days Remaining`, status states: SAFE, APPROACHING, URGENT, CRITICAL, DUE TODAY, OVERDUE, NEEDS VERIFICATION)
+  - [x] Build dynamic requirement checklist with smart GRE omission logic and live percentage calculation
+  - [x] Implement Smart Warnings engine (incomplete SOP alerts, past deadlines, unverified dates)
+- [x] `[4/5] Calendar Sync, Reminders & Search/Filter/CRUD`
+  - [x] Build 1-click Google Calendar link generator and downloadable `.ics` iCalendar export with alarm notifications
+  - [x] Implement Web Browser Notifications API and Google Apps Script email guide modal
+  - [x] Implement real-time multi-field filtering, full-text search, and multi-column sorting
+  - [x] Implement complete Add/Edit/Delete application modals and custom note editor
+- [x] `[5/5] Backup, Export & Verification`
+  - [x] Build Export to Excel (`.xlsx`/`.csv`) and JSON Backup/Restore functions
+  - [x] Verify UI rendering, interactions, modal flows, and test coverage
+  - [x] Create `README.md` user guide and `walkthrough.md`
