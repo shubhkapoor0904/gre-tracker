@@ -6,7 +6,7 @@
   'use strict';
 
   // --- STORAGE KEYS & INITIAL STATE ---
-  const STORAGE_KEY = 'targetms_applications_v1';
+  const STORAGE_KEY = 'targetms_applications_v2'; // Bumped key to load fresh Excel dataset
   const PROFILE_STORAGE_KEY = 'targetms_user_profile_v1';
   const SENT_MILESTONES_KEY = 'targetms_sent_milestones_v1';
 
@@ -39,194 +39,6 @@
     { id: 'req_final_sub', name: 'Final Application Submission', required: true }
   ];
 
-  // Pre-Verified Initial Dataset for Top Graduate Universities
-  const DEFAULT_APPLICATIONS = [
-    {
-      id: 'app_purdue_mscs',
-      university: 'Purdue University',
-      program: 'MS Computer Science',
-      degree: 'MS',
-      country: 'USA',
-      priority: 'High',
-      status: 'Documents Pending',
-      deadline: '2026-12-01',
-      openingDate: '2026-09-01',
-      deadlineType: 'Regular Round',
-      verificationStatus: 'Verified',
-      officialSourceUrl: 'https://www.cs.purdue.edu/graduate/admission/deadlines.html',
-      portalUrl: 'https://gradapply.purdue.edu/apply/',
-      greRequirement: 'Optional',
-      englishRequirement: 'TOEFL 80+ / IELTS 6.5+',
-      appFee: 75,
-      notes: 'Strong emphasis on algorithms and systems background. Require 3 academic LORs.',
-      checklist: [
-        { id: 'req_resume', name: 'Resume / CV', required: true, status: 'Completed' },
-        { id: 'req_sop', name: 'Statement of Purpose (SOP)', required: true, status: 'In Progress' },
-        { id: 'req_lor1', name: 'Letter of Recommendation (LOR 1)', required: true, status: 'Completed' },
-        { id: 'req_lor2', name: 'Letter of Recommendation (LOR 2)', required: true, status: 'Completed' },
-        { id: 'req_lor3', name: 'Letter of Recommendation (LOR 3)', required: true, status: 'In Progress' },
-        { id: 'req_transcripts', name: 'Official / Unofficial Transcripts', required: true, status: 'Completed' },
-        { id: 'req_gre', name: 'GRE General Score', required: false, status: 'Completed' },
-        { id: 'req_english', name: 'TOEFL / IELTS Score Report', required: true, status: 'Completed' },
-        { id: 'req_app_form', name: 'Online Application Form', required: true, status: 'In Progress' },
-        { id: 'req_app_fee', name: 'Application Fee Payment', required: true, status: 'Not Started' },
-        { id: 'req_final_sub', name: 'Final Application Submission', required: true, status: 'Not Started' }
-      ]
-    },
-    {
-      id: 'app_uiuc_mscs',
-      university: 'UIUC (Univ. of Illinois Urbana-Champaign)',
-      program: 'MS Computer Science',
-      degree: 'MS',
-      country: 'USA',
-      priority: 'High',
-      status: 'Documents Pending',
-      deadline: '2026-12-15',
-      openingDate: '2026-09-01',
-      deadlineType: 'Priority Round',
-      verificationStatus: 'Verified',
-      officialSourceUrl: 'https://cs.illinois.edu/admissions/graduate/applications-deadlines',
-      portalUrl: 'https://grad.illinois.edu/admissions/apply',
-      greRequirement: 'Not Required',
-      englishRequirement: 'TOEFL 103+ / IELTS 7.5+',
-      appFee: 90,
-      notes: 'GRE not required for MS CS. Highly competitive research focused program.',
-      checklist: [
-        { id: 'req_resume', name: 'Resume / CV', required: true, status: 'Completed' },
-        { id: 'req_sop', name: 'Statement of Purpose (SOP)', required: true, status: 'Completed' },
-        { id: 'req_lor1', name: 'Letter of Recommendation (LOR 1)', required: true, status: 'Completed' },
-        { id: 'req_lor2', name: 'Letter of Recommendation (LOR 2)', required: true, status: 'Completed' },
-        { id: 'req_lor3', name: 'Letter of Recommendation (LOR 3)', required: true, status: 'In Progress' },
-        { id: 'req_transcripts', name: 'Official / Unofficial Transcripts', required: true, status: 'Completed' },
-        { id: 'req_gre', name: 'GRE General Score', required: false, status: 'Not Started' },
-        { id: 'req_english', name: 'TOEFL / IELTS Score Report', required: true, status: 'Completed' },
-        { id: 'req_app_form', name: 'Online Application Form', required: true, status: 'In Progress' },
-        { id: 'req_app_fee', name: 'Application Fee Payment', required: true, status: 'Not Started' },
-        { id: 'req_final_sub', name: 'Final Application Submission', required: true, status: 'Not Started' }
-      ]
-    },
-    {
-      id: 'app_cmu_mscs',
-      university: 'Carnegie Mellon University (CMU)',
-      program: 'MS Computer Science',
-      degree: 'MS',
-      country: 'USA',
-      priority: 'High',
-      status: 'Researching',
-      deadline: '2026-12-10',
-      openingDate: '2026-09-01',
-      deadlineType: 'Early Action',
-      verificationStatus: 'Verified',
-      officialSourceUrl: 'https://csd.cmu.edu/academics/master-in-computer-science/admissions',
-      portalUrl: 'https://applygrad.cs.cmu.edu/apply/',
-      greRequirement: 'Optional',
-      englishRequirement: 'TOEFL 100+ / IELTS 7.5+',
-      appFee: 100,
-      notes: 'Early deadline Dec 3 has lower application fee ($80). Final deadline Dec 10.',
-      checklist: DEFAULT_CHECKLIST_ITEMS.map(item => ({ ...item, status: 'Not Started' }))
-    },
-    {
-      id: 'app_gatech_mscs',
-      university: 'Georgia Institute of Technology',
-      program: 'MS Computer Science',
-      degree: 'MS',
-      country: 'USA',
-      priority: 'High',
-      status: 'Documents Pending',
-      deadline: '2027-02-01',
-      openingDate: '2026-09-15',
-      deadlineType: 'Regular Round',
-      verificationStatus: 'Verified',
-      officialSourceUrl: 'https://www.cc.gatech.edu/ms-computer-science-admissions',
-      portalUrl: 'https://grad-apply.gatech.edu/apply/',
-      greRequirement: 'Optional',
-      englishRequirement: 'TOEFL 100+',
-      appFee: 105,
-      notes: 'Choose specialization track carefully during application form.',
-      checklist: DEFAULT_CHECKLIST_ITEMS.map(item => ({ ...item, status: item.id === 'req_resume' ? 'Completed' : 'Not Started' }))
-    },
-    {
-      id: 'app_columbia_mscs',
-      university: 'Columbia University',
-      program: 'MS Computer Science',
-      degree: 'MS',
-      country: 'USA',
-      priority: 'Medium',
-      status: 'Not Started',
-      deadline: '2027-01-15',
-      openingDate: '2026-09-15',
-      deadlineType: 'Priority Round',
-      verificationStatus: 'Verified',
-      officialSourceUrl: 'https://www.cs.columbia.edu/education/ms/admissions/',
-      portalUrl: 'https://gradengineering.columbia.edu/apply',
-      greRequirement: 'Optional',
-      englishRequirement: 'TOEFL 101+ / IELTS 7.0+',
-      appFee: 85,
-      notes: 'Video essay component required inside portal.',
-      checklist: DEFAULT_CHECKLIST_ITEMS.map(item => ({ ...item, status: 'Not Started' }))
-    },
-    {
-      id: 'app_nyu_msds',
-      university: 'New York University (NYU CDS)',
-      program: 'MS Data Science',
-      degree: 'MS',
-      country: 'USA',
-      priority: 'High',
-      status: 'Documents Pending',
-      deadline: '2027-01-22',
-      openingDate: '2026-09-01',
-      deadlineType: 'Regular Round',
-      verificationStatus: 'Verified',
-      officialSourceUrl: 'https://cds.nyu.edu/academics/ms-in-data-science/admissions/',
-      portalUrl: 'https://datascience.nyu.edu/apply',
-      greRequirement: 'Optional',
-      englishRequirement: 'TOEFL 100+ / IELTS 7.5+',
-      appFee: 110,
-      notes: 'Requires strong math/calculus/linear algebra prerequisite evidence.',
-      checklist: DEFAULT_CHECKLIST_ITEMS.map(item => ({ ...item, status: 'Not Started' }))
-    },
-    {
-      id: 'app_usc_mscs',
-      university: 'University of Southern California (USC)',
-      program: 'MS Computer Science',
-      degree: 'MS',
-      country: 'USA',
-      priority: 'Medium',
-      status: 'Not Started',
-      deadline: '2026-12-15',
-      openingDate: '2026-09-01',
-      deadlineType: 'Priority Round',
-      verificationStatus: 'Verified',
-      officialSourceUrl: 'https://www.cs.usc.edu/admissions/ms-admissions/',
-      portalUrl: 'https://gradadm.usc.edu/apply/',
-      greRequirement: 'Waived',
-      englishRequirement: 'TOEFL 90+ / IELTS 6.5+',
-      appFee: 90,
-      notes: 'Priority scholarship deadline Dec 15. Regular deadline Jan 15.',
-      checklist: DEFAULT_CHECKLIST_ITEMS.map(item => ({ ...item, status: 'Not Started' }))
-    },
-    {
-      id: 'app_northeastern_mscs',
-      university: 'Northeastern University',
-      program: 'MS Computer Science (Khoury)',
-      degree: 'MS',
-      country: 'USA',
-      priority: 'Medium',
-      status: 'Ready to Apply',
-      deadline: '2027-04-15',
-      openingDate: '2026-08-15',
-      deadlineType: 'Rolling Admissions',
-      verificationStatus: 'Verified',
-      officialSourceUrl: 'https://khoury.northeastern.edu/academics/masters-programs/ms-in-computer-science/',
-      portalUrl: 'https://apply.khoury.northeastern.edu/',
-      greRequirement: 'Not Required',
-      englishRequirement: 'TOEFL 100+ / IELTS 7.5+',
-      appFee: 100,
-      notes: 'Rolling admissions — apply early for campus allocation preference (Boston vs Silicon Valley).',
-      checklist: DEFAULT_CHECKLIST_ITEMS.map(item => ({ ...item, status: 'Completed' }))
-    }
-  ];
-
   // Global State
   let state = {
     applications: [],
@@ -244,14 +56,20 @@
 
   // --- INITIALIZATION ---
   function init() {
-    loadDataFromStorage();
     loadProfileFromStorage();
     loadSentMilestones();
     initEmailJsSDK();
-    autoTryLoadCollegesExcel();
+    
+    // Attempt auto-loading Colleges.xlsx as primary source of truth
+    const loadedFromStorage = loadDataFromStorage();
+    if (!loadedFromStorage) {
+      autoTryLoadCollegesExcel();
+    } else {
+      renderApp();
+      checkStrategy1Milestones();
+    }
+
     setupEventListeners();
-    renderApp();
-    checkStrategy1Milestones();
   }
 
   // --- DATA LOADING & PERSISTENCE ---
@@ -260,14 +78,12 @@
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         state.applications = JSON.parse(saved);
-      } else {
-        state.applications = [...DEFAULT_APPLICATIONS];
-        saveDataToStorage();
+        return true;
       }
     } catch (err) {
       console.error('Failed to load from storage:', err);
-      state.applications = [...DEFAULT_APPLICATIONS];
     }
+    return false;
   }
 
   function saveDataToStorage() {
@@ -344,7 +160,7 @@
     }
   }
 
-  // Auto-attempt fetching & parsing Colleges.xlsx if present in directory
+  // Auto-attempt fetching & parsing Colleges.xlsx as primary source of truth
   async function autoTryLoadCollegesExcel() {
     if (window.XLSX) {
       try {
@@ -353,18 +169,17 @@
           const buffer = await response.arrayBuffer();
           const workbook = XLSX.read(buffer, { type: 'array' });
           if (workbook && workbook.SheetNames.length > 0) {
-            parseAndMergeWorkbook(workbook, false);
+            parseAndMergeWorkbook(workbook, false, true); // replaceMode = true for exact 27 entries
           }
         }
       } catch (err) {
-        // Silently ignore if not running on http server or file not found directly
+        console.warn('Colleges.xlsx auto-load notice:', err);
       }
     }
   }
 
   // --- PARSE EXCEL WORKBOOK (SHEETJS ENGINE) ---
-  function parseAndMergeWorkbook(workbook, notify = true) {
-    let importedCount = 0;
+  function parseAndMergeWorkbook(workbook, notify = true, replaceMode = false) {
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
     const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
@@ -392,7 +207,7 @@
     const idxFee = findCol(['fee', 'cost']);
     const idxNotes = findCol(['note', 'comment', 'remark', 'requirement']);
 
-    const newApps = [];
+    const parsedApps = [];
 
     for (let r = 1; r < rows.length; r++) {
       const row = rows[r];
@@ -401,7 +216,7 @@
       const univName = idxUniv !== -1 && row[idxUniv] ? String(row[idxUniv]).trim() : '';
       if (!univName) continue;
 
-      const progName = idxProg !== -1 && row[idxProg] ? String(row[idxProg]).trim() : 'MS Graduate Program';
+      const progName = idxProg !== -1 && row[idxProg] ? String(row[idxProg]).trim() : 'MS Program';
       const degreeName = idxDegree !== -1 && row[idxDegree] ? String(row[idxDegree]).trim() : 'MS';
       const countryName = idxCountry !== -1 && row[idxCountry] ? String(row[idxCountry]).trim() : 'USA';
       const rawDeadline = idxDeadline !== -1 && row[idxDeadline] ? row[idxDeadline] : '';
@@ -414,10 +229,9 @@
       // Format Date
       let deadlineStr = parseExcelDate(rawDeadline);
 
-      // Unique ID check
       const id = 'excel_app_' + Date.now() + '_' + r;
 
-      const newApp = {
+      const appRecord = {
         id: id,
         university: univName,
         program: progName,
@@ -438,25 +252,27 @@
         checklist: DEFAULT_CHECKLIST_ITEMS.map(item => ({ ...item, status: 'Not Started' }))
       };
 
-      // Check duplicate
-      const exists = state.applications.some(a => 
-        a.university.toLowerCase() === univName.toLowerCase() && 
-        a.program.toLowerCase() === progName.toLowerCase()
-      );
-
-      if (!exists) {
-        newApps.push(newApp);
-        importedCount++;
-      }
+      parsedApps.push(appRecord);
     }
 
-    if (newApps.length > 0) {
-      state.applications = [...state.applications, ...newApps];
-      saveDataToStorage();
-      renderApp();
-      if (notify) alert(`Successfully imported ${importedCount} university applications!`);
-    } else if (notify) {
-      alert('All applications in the Excel file are already present in your tracker.');
+    if (replaceMode || state.applications.length === 0) {
+      state.applications = parsedApps;
+    } else {
+      // Merge unique
+      parsedApps.forEach(newApp => {
+        const exists = state.applications.some(a => 
+          a.university.toLowerCase() === newApp.university.toLowerCase() && 
+          a.program.toLowerCase() === newApp.program.toLowerCase()
+        );
+        if (!exists) state.applications.push(newApp);
+      });
+    }
+
+    saveDataToStorage();
+    renderApp();
+
+    if (notify) {
+      alert(`Loaded ${parsedApps.length} universities directly from your Excel spreadsheet!`);
     }
   }
 
@@ -1557,7 +1373,7 @@
 
     confirmBtn.addEventListener('click', () => {
       if (loadedWorkbook) {
-        parseAndMergeWorkbook(loadedWorkbook, true);
+        parseAndMergeWorkbook(loadedWorkbook, true, true);
         document.getElementById('modal-import').classList.remove('active');
       }
     });
