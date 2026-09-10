@@ -7,6 +7,22 @@
 
   // --- STORAGE KEYS & INITIAL STATE ---
   const STORAGE_KEY = 'targetms_applications_v1';
+  const PROFILE_STORAGE_KEY = 'targetms_user_profile_v1';
+  const SENT_MILESTONES_KEY = 'targetms_sent_milestones_v1';
+
+  // Default User Profile
+  const DEFAULT_USER_PROFILE = {
+    name: 'Sarah Jenkins',
+    email: 'sarah.gre2026@gmail.com',
+    autoEmail: true,
+    emailStrategy: 'milestone', // Strategy 1: Milestone-Based (30d, 14d, 7d, 3d, 1d)
+    emailJsService: 'service_targetms',
+    emailJsTemplate: 'template_deadline',
+    emailJsKey: 'user_targetms_free_key'
+  };
+
+  // Milestone Days for Strategy 1
+  const MILESTONE_DAYS = [30, 14, 7, 3, 1];
 
   // Default Standard Requirements List for Graduate Applications
   const DEFAULT_CHECKLIST_ITEMS = [
@@ -126,7 +142,7 @@
       greRequirement: 'Optional',
       englishRequirement: 'TOEFL 100+',
       appFee: 105,
-      notes: 'Choose specialization specialization track carefully during application form.',
+      notes: 'Choose specialization track carefully during application form.',
       checklist: DEFAULT_CHECKLIST_ITEMS.map(item => ({ ...item, status: item.id === 'req_resume' ? 'Completed' : 'Not Started' }))
     },
     {
@@ -214,6 +230,8 @@
   // Global State
   let state = {
     applications: [],
+    userProfile: { ...DEFAULT_USER_PROFILE },
+    sentMilestones: {},
     activeAppId: null,
     currentView: 'grid', // 'grid' | 'table'
     searchQuery: '',
@@ -227,9 +245,13 @@
   // --- INITIALIZATION ---
   function init() {
     loadDataFromStorage();
+    loadProfileFromStorage();
+    loadSentMilestones();
+    initEmailJsSDK();
     autoTryLoadCollegesExcel();
     setupEventListeners();
     renderApp();
+    checkStrategy1Milestones();
   }
 
   // --- DATA LOADING & PERSISTENCE ---
@@ -253,6 +275,72 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state.applications));
     } catch (err) {
       console.error('Failed to save to storage:', err);
+    }
+  }
+
+  function loadProfileFromStorage() {
+    try {
+      const saved = localStorage.getItem(PROFILE_STORAGE_KEY);
+      if (saved) {
+        state.userProfile = { ...DEFAULT_USER_PROFILE, ...JSON.parse(saved) };
+      }
+    } catch (err) {
+      console.error('Failed to load profile:', err);
+    }
+    updateProfileUI();
+  }
+
+  function saveProfileToStorage() {
+    try {
+      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(state.userProfile));
+      updateProfileUI();
+    } catch (err) {
+      console.error('Failed to save profile:', err);
+    }
+  }
+
+  function loadSentMilestones() {
+    try {
+      const saved = localStorage.getItem(SENT_MILESTONES_KEY);
+      if (saved) state.sentMilestones = JSON.parse(saved);
+    } catch (err) {
+      state.sentMilestones = {};
+    }
+  }
+
+  function saveSentMilestones() {
+    try {
+      localStorage.setItem(SENT_MILESTONES_KEY, JSON.stringify(state.sentMilestones));
+    } catch (err) {
+      console.error('Failed to save sent milestones:', err);
+    }
+  }
+
+  function updateProfileUI() {
+    document.getElementById('user-display-name').textContent = state.userProfile.name || 'Applicant';
+    document.getElementById('user-display-email').textContent = state.userProfile.email || 'Configure Email';
+    
+    // Avatar initials
+    const nameParts = (state.userProfile.name || 'A P').split(' ');
+    const initials = (nameParts[0].charAt(0) + (nameParts[1] ? nameParts[1].charAt(0) : '')).toUpperCase();
+    document.getElementById('user-avatar-initials').textContent = initials;
+
+    // Form values
+    document.getElementById('profile-name').value = state.userProfile.name;
+    document.getElementById('profile-email').value = state.userProfile.email;
+    document.getElementById('emailjs-service-id').value = state.userProfile.emailJsService;
+    document.getElementById('emailjs-template-id').value = state.userProfile.emailJsTemplate;
+    document.getElementById('emailjs-public-key').value = state.userProfile.emailJsKey;
+    document.getElementById('toggle-auto-email').checked = state.userProfile.autoEmail;
+  }
+
+  function initEmailJsSDK() {
+    if (window.emailjs && state.userProfile.emailJsKey) {
+      try {
+        emailjs.init(state.userProfile.emailJsKey);
+      } catch (e) {
+        console.warn('EmailJS init warning:', e);
+      }
     }
   }
 
@@ -523,6 +611,85 @@
     return warnings;
   }
 
+  // 4. STRATEGY 1: Milestone-Based Email Dispatcher (30d, 14d, 7d, 3d, 1d)
+  function checkStrategy1Milestones() {
+    if (!state.userProfile.autoEmail) return;
+
+    state.applications.forEach(app => {
+      if (app.status === 'Submitted' || app.status === 'Decision Received') return;
+
+      const deadState = calculateDeadlineState(app.deadline, app.verificationStatus);
+      if (deadState.days === null) return;
+
+      // Check if current days remaining is one of the milestone trigger days
+      if (MILESTONE_DAYS.includes(deadState.days)) {
+        const milestoneKey = `${app.id}_${deadState.days}d`;
+        
+        // Ensure this specific milestone email is dispatched EXACTLY ONCE
+        if (!state.sentMilestones[milestoneKey]) {
+          console.log(`[Strategy 1 Milestone Trigger] Dispatching milestone email for ${app.university} (${deadState.days} days remaining)`);
+          
+          window.sendApplicationEmail(app.id, `🚨 Milestone Alert (${deadState.days} Days Remaining): ${app.university}`);
+          state.sentMilestones[milestoneKey] = new Date().toISOString();
+          saveSentMilestones();
+        }
+      }
+    });
+  }
+
+  window.sendApplicationEmail = function (appId, customSubject = null) {
+    const app = state.applications.find(a => a.id === appId);
+    if (!app) return;
+
+    const recipient = state.userProfile.email;
+    if (!recipient) {
+      alert('Please configure your Notification Recipient Email in the Email Alerts Dashboard first!');
+      document.getElementById('modal-email-center').classList.add('active');
+      return;
+    }
+
+    const deadState = calculateDeadlineState(app.deadline, app.verificationStatus);
+    const completion = calculateCompletion(app);
+
+    const subjectText = customSubject || `🚨 Deadline Reminder: ${app.university} (${app.program})`;
+
+    const emailParams = {
+      to_name: state.userProfile.name,
+      to_email: recipient,
+      subject: subjectText,
+      university_name: app.university,
+      program_name: app.program,
+      deadline_date: app.deadline,
+      days_remaining: deadState.label,
+      completion_pct: completion + '%',
+      portal_url: app.portalUrl || 'N/A'
+    };
+
+    // If EmailJS SDK loaded, attempt dispatch
+    if (window.emailjs && state.userProfile.emailJsKey && state.userProfile.emailJsKey !== 'user_targetms_free_key') {
+      emailjs.send(state.userProfile.emailJsService, state.userProfile.emailJsTemplate, emailParams)
+        .then(() => {
+          alert(`📧 Strategy 1 Milestone Email sent to ${recipient} for ${app.university}!`);
+        })
+        .catch(err => {
+          console.warn('EmailJS error:', err);
+          simulateEmailDispatch(app, recipient, subjectText);
+        });
+    } else {
+      // 100% Free Direct Simulator & Mailto Fallback
+      simulateEmailDispatch(app, recipient, subjectText);
+    }
+  };
+
+  function simulateEmailDispatch(app, recipient, subjectText) {
+    const subject = encodeURIComponent(subjectText || `🚨 Deadline Milestone Reminder: ${app.university} (${app.program})`);
+    const body = encodeURIComponent(`Hi ${state.userProfile.name},\n\nStrategy 1 Milestone Alert for ${app.university} - ${app.program}!\n\nDeadline Date: ${app.deadline}\nStatus: ${app.status}\nProgress: ${calculateCompletion(app)}%\nPortal: ${app.portalUrl || 'N/A'}\n\nThis is 1 of your 5 milestone reminders for this university.`);
+    
+    // Open native mailto client or alert
+    window.location.href = `mailto:${recipient}?subject=${subject}&body=${body}`;
+    alert(`📧 Strategy 1 Milestone Alert generated for ${recipient}! Default mail client opened with formatted reminder.`);
+  }
+
 
   // --- RENDER LOGIC ---
 
@@ -750,15 +917,15 @@
         <!-- Card Footer Actions -->
         <div class="card-actions">
           <button class="btn btn-secondary btn-sm" onclick="window.openDetailDrawer('${app.id}')">
-            View & Edit Details
-          </button>
-          
-          <button class="btn btn-accent btn-sm" onclick="window.addGCalEvent('${app.id}')" title="Add 1-Click Event to Google Calendar">
-            📅 GCal
+            View Details
           </button>
 
-          <button class="btn btn-secondary btn-sm" onclick="window.downloadAppIcs('${app.id}')" title="Download .ics Calendar File">
-            📥 .ics
+          <button class="btn btn-accent btn-sm" onclick="window.sendApplicationEmail('${app.id}')" title="Send Milestone Email Alert">
+            📧 Email
+          </button>
+          
+          <button class="btn btn-secondary btn-sm" onclick="window.addGCalEvent('${app.id}')" title="Add 1-Click Event to Google Calendar">
+            📅 GCal
           </button>
         </div>
       </div>
@@ -794,6 +961,7 @@
         </td>
         <td>${app.greRequirement}</td>
         <td>
+          <button class="btn btn-accent btn-sm" onclick="window.sendApplicationEmail('${app.id}')">📧 Email</button>
           <button class="btn btn-secondary btn-sm" onclick="window.openDetailDrawer('${app.id}')">Manage</button>
         </td>
       </tr>
@@ -935,6 +1103,10 @@
       saveDataToStorage();
       alert('Notes saved successfully!');
     }
+  });
+
+  document.getElementById('drawer-btn-send-email').addEventListener('click', () => {
+    if (state.activeAppId) window.sendApplicationEmail(state.activeAppId);
   });
 
 
@@ -1147,12 +1319,34 @@
     });
   });
 
-  // Copy Apps Script Code
-  document.getElementById('btn-copy-script').addEventListener('click', () => {
-    const code = document.getElementById('apps-script-code').value;
-    navigator.clipboard.writeText(code).then(() => {
-      alert('Google Apps Script snippet copied to clipboard!');
-    });
+
+  // --- USER PROFILE & EMAIL CENTER HANDLERS ---
+
+  document.getElementById('btn-save-profile').addEventListener('click', () => {
+    state.userProfile.name = document.getElementById('profile-name').value.trim();
+    state.userProfile.email = document.getElementById('profile-email').value.trim();
+    saveProfileToStorage();
+    alert('User profile settings saved!');
+  });
+
+  document.getElementById('btn-save-emailjs').addEventListener('click', () => {
+    state.userProfile.emailJsService = document.getElementById('emailjs-service-id').value.trim();
+    state.userProfile.emailJsTemplate = document.getElementById('emailjs-template-id').value.trim();
+    state.userProfile.emailJsKey = document.getElementById('emailjs-public-key').value.trim();
+    state.userProfile.autoEmail = document.getElementById('toggle-auto-email').checked;
+    saveProfileToStorage();
+    initEmailJsSDK();
+    alert('Strategy 1 Milestone Email settings saved!');
+  });
+
+  document.getElementById('btn-send-test-email').addEventListener('click', () => {
+    const firstApp = state.applications[0] || { id: 'test', university: 'Purdue University', program: 'MS CS', deadline: '2026-12-01' };
+    window.sendApplicationEmail(firstApp.id, `🚨 Strategy 1 Test Milestone Email: ${firstApp.university}`);
+  });
+
+  document.getElementById('toggle-auto-email').addEventListener('change', (e) => {
+    state.userProfile.autoEmail = e.target.checked;
+    saveProfileToStorage();
   });
 
 
@@ -1292,6 +1486,14 @@
     // Modal Triggers
     document.getElementById('btn-add-app').addEventListener('click', () => openAppFormModal());
     document.getElementById('empty-btn-add').addEventListener('click', () => openAppFormModal());
+
+    document.getElementById('btn-email-center').addEventListener('click', () => {
+      document.getElementById('modal-email-center').classList.add('active');
+    });
+
+    document.getElementById('user-profile-pill').addEventListener('click', () => {
+      document.getElementById('modal-email-center').classList.add('active');
+    });
 
     document.getElementById('btn-import-excel').addEventListener('click', () => {
       document.getElementById('modal-import').classList.add('active');
