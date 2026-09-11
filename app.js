@@ -611,82 +611,37 @@
     }
   };
 
+  let currentPreviewEmail = { recipient: '', subject: '', body: '' };
+
+  function openEmailPreviewModal(recipient, subjectText, bodyText, modalTitle = '📧 Application Email Alert Ready') {
+    currentPreviewEmail = { recipient: recipient, subject: subjectText, body: bodyText };
+
+    const modalTitleEl = document.getElementById('preview-email-modal-title');
+    const recipientEl = document.getElementById('preview-email-recipient');
+    const subjectEl = document.getElementById('preview-email-subject');
+    const bodyEl = document.getElementById('preview-email-body');
+
+    if (modalTitleEl) modalTitleEl.textContent = modalTitle;
+    if (recipientEl) recipientEl.textContent = recipient;
+    if (subjectEl) subjectEl.value = subjectText;
+    if (bodyEl) bodyEl.value = bodyText;
+
+    const modalPreview = document.getElementById('modal-email-preview');
+    if (modalPreview) modalPreview.classList.add('active');
+  }
+
   function simulateWeeklyDigestDispatch(recipient, subjectText, digestSummary, appCount) {
-    const subject = encodeURIComponent(subjectText);
-    const body = encodeURIComponent(`Hi ${state.userProfile.name},\n\nHere is your automated weekly digest of your active approaching graduate application deadlines:\n\n${digestSummary}\nGood luck with your application prep!`);
-    
-    window.location.href = `mailto:${recipient}?subject=${subject}&body=${body}`;
+    const rawBody = `Hi ${state.userProfile.name},\n\nHere is your automated weekly digest of your active approaching graduate application deadlines:\n\n${digestSummary}\nGood luck with your application prep!`;
     localStorage.setItem(LAST_WEEKLY_DIGEST_KEY, new Date().toISOString());
-    alert(`📧 Weekly Digest generated for ${recipient}! (${appCount} application(s) summarized).`);
+    openEmailPreviewModal(recipient, subjectText, rawBody, `📧 TargetMS Weekly Digest (${appCount} Applications)`);
   }
-
-  function checkWeeklyDigestTrigger() {
-    if (!state.userProfile.autoEmail) return;
-
-    const lastSentStr = localStorage.getItem(LAST_WEEKLY_DIGEST_KEY);
-    const now = new Date();
-
-    if (lastSentStr) {
-      const lastSent = new Date(lastSentStr);
-      const diffDays = (now - lastSent) / (1000 * 60 * 60 * 24);
-      if (diffDays >= 7) {
-        window.sendWeeklyTop7Digest(false);
-      }
-    } else {
-      // First time initialization — send initial weekly digest
-      window.sendWeeklyTop7Digest(false);
-    }
-  }
-
-  window.sendApplicationEmail = function (appId, customSubject = null) {
-    const app = state.applications.find(a => a.id === appId);
-    if (!app) return;
-
-    const recipient = state.userProfile.email;
-    if (!recipient) {
-      alert('Please configure your Notification Recipient Email in the Email Alerts Dashboard first!');
-      document.getElementById('modal-email-center').classList.add('active');
-      return;
-    }
-
-    const deadState = calculateDeadlineState(app.deadline, app.verificationStatus);
-    const completion = calculateCompletion(app);
-
-    const subjectText = customSubject || `🚨 Deadline Reminder: ${app.university} (${app.program})`;
-
-    const emailParams = {
-      to_name: state.userProfile.name,
-      to_email: recipient,
-      subject: subjectText,
-      university_name: app.university,
-      program_name: app.program,
-      deadline_date: app.deadline || app.rawDeadlineText || 'Needs Verification',
-      days_remaining: deadState.label,
-      completion_pct: completion + '%',
-      portal_url: app.portalUrl || 'N/A'
-    };
-
-    if (window.emailjs && state.userProfile.emailJsKey && state.userProfile.emailJsKey !== 'user_targetms_free_key') {
-      emailjs.send(state.userProfile.emailJsService, state.userProfile.emailJsTemplate, emailParams)
-        .then(() => {
-          alert(`📧 Email alert sent to ${recipient} for ${app.university}!`);
-        })
-        .catch(err => {
-          console.warn('EmailJS error:', err);
-          simulateEmailDispatch(app, recipient, subjectText);
-        });
-    } else {
-      simulateEmailDispatch(app, recipient, subjectText);
-    }
-  };
 
   function simulateEmailDispatch(app, recipient, subjectText) {
-    const subject = encodeURIComponent(subjectText || `🚨 Deadline Reminder: ${app.university} (${app.program})`);
-    const body = encodeURIComponent(`Hi ${state.userProfile.name},\n\nApplication Alert for ${app.university} - ${app.program}!\n\nDeadline Date: ${app.deadline || app.rawDeadlineText || 'Needs Verification'}\nStatus: ${app.status}\nProgress: ${calculateCompletion(app)}%\nPortal: ${app.portalUrl || 'N/A'}`);
-    
-    window.location.href = `mailto:${recipient}?subject=${subject}&body=${body}`;
-    alert(`📧 Alert generated for ${recipient}! Default mail client opened with formatted reminder.`);
+    const rawSubject = subjectText || `🚨 Deadline Reminder: ${app.university} (${app.program})`;
+    const rawBody = `Hi ${state.userProfile.name},\n\nApplication Alert for ${app.university} - ${app.program}!\n\nDeadline Date: ${app.deadline || app.rawDeadlineText || 'Needs Verification'}\nStatus: ${app.status}\nProgress: ${calculateCompletion(app)}%\nPortal: ${app.portalUrl || 'N/A'}\n\nGood luck with your application prep!`;
+    openEmailPreviewModal(recipient, rawSubject, rawBody, `📧 Email Alert: ${app.university}`);
   }
+
 
 
   // --- RENDER LOGIC ---
@@ -1528,6 +1483,92 @@
     document.getElementById('btn-export-modal').addEventListener('click', () => {
       document.getElementById('modal-export').classList.add('active');
     });
+
+    // Profile & Email JS Handlers
+    const saveProfileBtn = document.getElementById('btn-save-profile');
+    if (saveProfileBtn) {
+      saveProfileBtn.addEventListener('click', () => {
+        const nameVal = document.getElementById('profile-name').value.trim();
+        const emailVal = document.getElementById('profile-email').value.trim();
+        if (emailVal) {
+          state.userProfile.name = nameVal || 'Applicant';
+          state.userProfile.email = emailVal;
+          saveDataToStorage();
+          document.getElementById('user-display-name').textContent = state.userProfile.name;
+          document.getElementById('user-display-email').textContent = state.userProfile.email;
+          alert('Profile saved successfully!');
+        } else {
+          alert('Please enter a valid email address.');
+        }
+      });
+    }
+
+    const saveEmailJsBtn = document.getElementById('btn-save-emailjs');
+    if (saveEmailJsBtn) {
+      saveEmailJsBtn.addEventListener('click', () => {
+        state.userProfile.emailJsService = document.getElementById('emailjs-service-id').value.trim();
+        state.userProfile.emailJsTemplate = document.getElementById('emailjs-template-id').value.trim();
+        state.userProfile.emailJsKey = document.getElementById('emailjs-public-key').value.trim();
+        saveDataToStorage();
+        alert('EmailJS settings saved!');
+      });
+    }
+
+    const sendTestEmailBtn = document.getElementById('btn-send-test-email');
+    if (sendTestEmailBtn) {
+      sendTestEmailBtn.addEventListener('click', () => {
+        window.sendWeeklyTop7Digest(true);
+      });
+    }
+
+    // Email Dispatch Modal Handlers
+    const openGmailBtn = document.getElementById('btn-open-web-gmail');
+    if (openGmailBtn) {
+      openGmailBtn.addEventListener('click', () => {
+        if (!currentPreviewEmail.recipient) return;
+        const su = encodeURIComponent(currentPreviewEmail.subject);
+        const body = encodeURIComponent(currentPreviewEmail.body);
+        const to = encodeURIComponent(currentPreviewEmail.recipient);
+        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${su}&body=${body}`;
+        window.open(gmailUrl, '_blank');
+      });
+    }
+
+    const copyEmailBtn = document.getElementById('btn-copy-email-text');
+    if (copyEmailBtn) {
+      copyEmailBtn.addEventListener('click', () => {
+        const fullText = `Subject: ${currentPreviewEmail.subject}\n\n${currentPreviewEmail.body}`;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(fullText).then(() => {
+            alert('📋 Email digest copied to clipboard!');
+          }).catch(() => {
+            copyTextFallback();
+          });
+        } else {
+          copyTextFallback();
+        }
+      });
+    }
+
+    function copyTextFallback() {
+      const copyBox = document.getElementById('preview-email-body');
+      if (copyBox) {
+        copyBox.select();
+        document.execCommand('copy');
+        alert('📋 Email digest copied to clipboard!');
+      }
+    }
+
+    const openDesktopMailBtn = document.getElementById('btn-open-desktop-mail');
+    if (openDesktopMailBtn) {
+      openDesktopMailBtn.addEventListener('click', () => {
+        if (!currentPreviewEmail.recipient) return;
+        const su = encodeURIComponent(currentPreviewEmail.subject);
+        const body = encodeURIComponent(currentPreviewEmail.body);
+        window.location.href = `mailto:${currentPreviewEmail.recipient}?subject=${su}&body=${body}`;
+      });
+    }
+
 
     // Close Modals & Drawers
     document.querySelectorAll('.close-modal').forEach(btn => {
