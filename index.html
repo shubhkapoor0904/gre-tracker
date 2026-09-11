@@ -119,13 +119,13 @@
         <!-- Search Input -->
         <div class="search-box">
           <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="search-input" class="search-input" placeholder="Search university, program, country, notes...">
+          <input type="text" id="search-input" class="search-input" placeholder="Search university, program, country, notes..." oninput="window.updateSearch(this.value)">
         </div>
 
         <!-- View Tabs -->
         <div class="view-tabs">
-          <button id="view-tab-grid" class="tab-btn active">Grid Cards</button>
-          <button id="view-tab-table" class="tab-btn">Table List</button>
+          <button id="view-tab-grid" class="tab-btn active" onclick="window.switchView('grid')">Grid Cards</button>
+          <button id="view-tab-table" class="tab-btn" onclick="window.switchView('table')">Table List</button>
         </div>
       </div>
 
@@ -133,7 +133,7 @@
       <div class="toolbar-row">
         <div class="filter-group">
           <!-- Status Filter -->
-          <select id="filter-status" class="select-control">
+          <select id="filter-status" class="select-control" onchange="window.updateFilter('status', this.value)">
             <option value="ALL">All Statuses</option>
             <option value="Not Started">Not Started</option>
             <option value="Researching">Researching</option>
@@ -145,7 +145,7 @@
           </select>
 
           <!-- Urgency Filter -->
-          <select id="filter-urgency" class="select-control">
+          <select id="filter-urgency" class="select-control" onchange="window.updateFilter('urgency', this.value)">
             <option value="ALL">All Urgencies</option>
             <option value="SAFE">Safe (30+ days)</option>
             <option value="APPROACHING">Approaching (15-30 days)</option>
@@ -157,7 +157,7 @@
           </select>
 
           <!-- Priority Filter -->
-          <select id="filter-priority" class="select-control">
+          <select id="filter-priority" class="select-control" onchange="window.updateFilter('priority', this.value)">
             <option value="ALL">All Priorities</option>
             <option value="High">High Priority ⭐</option>
             <option value="Medium">Medium Priority</option>
@@ -165,7 +165,7 @@
           </select>
 
           <!-- GRE Requirement Filter -->
-          <select id="filter-gre" class="select-control">
+          <select id="filter-gre" class="select-control" onchange="window.updateFilter('gre', this.value)">
             <option value="ALL">All GRE Rules</option>
             <option value="Required">GRE Required</option>
             <option value="Optional">GRE Optional</option>
@@ -176,7 +176,7 @@
 
         <div class="filter-group">
           <label for="sort-by" class="form-label" style="margin-right: 4px;">Sort By:</label>
-          <select id="sort-by" class="select-control">
+          <select id="sort-by" class="select-control" onchange="window.updateSort(this.value)">
             <option value="deadline-asc">Deadline (Earliest First)</option>
             <option value="deadline-desc">Deadline (Latest First)</option>
             <option value="progress-asc">Progress % (Lowest First)</option>
@@ -507,7 +507,7 @@
               <input type="email" id="profile-email" class="form-control" value="sarah.gre2026@gmail.com" required>
             </div>
           </div>
-          <button id="btn-save-profile" class="btn btn-secondary btn-sm" style="align-self: flex-start;">Save Profile Settings</button>
+          <button id="btn-save-profile" class="btn btn-secondary btn-sm" style="align-self: flex-start;" onclick="window.saveProfileSettings()">Save Profile Settings</button>
         </div>
 
         <!-- Free EmailJS Service Credentials Card -->
@@ -537,8 +537,8 @@
           </div>
 
           <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-            <button id="btn-save-emailjs" class="btn btn-secondary btn-sm">Save Email Credentials</button>
-            <button id="btn-send-test-email" class="btn btn-accent btn-sm">🚀 Send Test Email Now</button>
+            <button id="btn-save-emailjs" class="btn btn-secondary btn-sm" onclick="window.saveEmailJsCredentials()">Save Email Credentials</button>
+            <button id="btn-send-test-email" class="btn btn-accent btn-sm" onclick="window.sendWeeklyTop7Digest(true)">🚀 Send Test Email Now</button>
           </div>
         </div>
 
@@ -586,13 +586,13 @@
           <span style="font-weight: 700; font-size: 0.88rem; color: var(--accent-purple);">Choose Dispatch Method (No desktop app needed):</span>
           
           <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <button id="btn-open-web-gmail" class="btn btn-primary btn-sm">
+            <button id="btn-open-web-gmail" class="btn btn-primary btn-sm" onclick="window.openGmailWeb()">
               🌐 Send via Web Gmail (1-Click)
             </button>
-            <button id="btn-copy-email-text" class="btn btn-accent btn-sm">
+            <button id="btn-copy-email-text" class="btn btn-accent btn-sm" onclick="window.copyEmailText()">
               📋 Copy Email to Clipboard
             </button>
-            <button id="btn-open-desktop-mail" class="btn btn-secondary btn-sm">
+            <button id="btn-open-desktop-mail" class="btn btn-secondary btn-sm" onclick="window.openDesktopMail()">
               ✉️ Open System Mail App
             </button>
           </div>
