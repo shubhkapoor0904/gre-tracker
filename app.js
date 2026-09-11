@@ -417,45 +417,105 @@
     }
   }
 
-  // --- PARSE EXCEL WORKBOOK (EXACT ACCURACY ENGINE) ---
+  // --- PARSE EXCEL WORKBOOK (ULTRA-ROBUST MULTI-STRATEGY ENGINE) ---
   function parseAndMergeWorkbook(workbook, notify = true, replaceMode = false) {
-    const sheetName = workbook.SheetNames[0];
-    const sheet = workbook.Sheets[sheetName];
-    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
-    if (!rows || rows.length < 2) {
-      if (notify) alert('No data rows found in the selected Excel sheet.');
+    if (!workbook || !workbook.SheetNames || workbook.SheetNames.length === 0) {
+      if (notify) alert('Unable to read Excel workbook sheets.');
       return;
     }
 
-    // Smart Header Mapping with ultra-flexible fuzzy matching & column fallbacks
-    const headers = rows[0].map(h => String(h || '').trim().toLowerCase());
-    
-    function findCol(keywords) {
-      return headers.findIndex(h => keywords.some(k => h.includes(k)));
+    // Find the first sheet that actually contains non-empty rows
+    let rows = [];
+    let chosenSheetName = '';
+
+    for (const name of workbook.SheetNames) {
+      const sheet = workbook.Sheets[name];
+      if (!sheet) continue;
+      const rawRows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+      if (rawRows && rawRows.length > 0) {
+        const validRows = rawRows.filter(r => Array.isArray(r) && r.some(cell => String(cell || '').trim() !== ''));
+        if (validRows.length > 0) {
+          rows = validRows;
+          chosenSheetName = name;
+          break;
+        }
+      }
     }
 
-    let idxUniv = findCol(['university', 'college', 'school', 'institution', 'univ', 'target', 'name', 'colleges', 's.no', 'sr']);
-    if (idxUniv === -1) idxUniv = 0; // Fallback to first column if no header matches
+    if (rows.length === 0) {
+      if (notify) alert('Selected spreadsheet file contains no data rows.');
+      return;
+    }
 
-    const idxProg = findCol(['program', 'course', 'major', 'department', 'field', 'track']);
-    const idxDegree = findCol(['degree', 'qualification', 'level', 'type']);
-    const idxCountry = findCol(['country', 'location', 'region', 'state']);
-    const idxDeadline = findCol(['deadline', 'due date', 'date', 'due', 'last date']);
-    const idxPriority = findCol(['priority', 'importance', 'preference', 'tier']);
-    const idxGre = findCol(['gre', 'testing', 'exam']);
-    const idxStatus = findCol(['status', 'state', 'stage', 'progress']);
-    const idxFee = findCol(['fee', 'cost', 'app fee', 'application fee']);
-    const idxNotes = findCol(['note', 'comment', 'remark', 'requirement', 'checklist', 'details']);
+    // Strategy 1: Scan top 5 rows to locate header row
+    let headerRowIndex = -1;
+    let idxUniv = -1, idxProg = -1, idxDegree = -1, idxCountry = -1, idxDeadline = -1, idxPriority = -1, idxGre = -1, idxStatus = -1, idxFee = -1, idxNotes = -1;
+
+    const univKeywords = ['university', 'college', 'school', 'institution', 'univ', 'target', 'name', 'colleges'];
+    const progKeywords = ['program', 'course', 'major', 'department', 'field', 'track', 'specialization'];
+    const degreeKeywords = ['degree', 'qualification', 'level', 'type'];
+    const countryKeywords = ['country', 'location', 'region', 'state'];
+    const deadlineKeywords = ['deadline', 'due date', 'date', 'due', 'last date'];
+    const priorityKeywords = ['priority', 'importance', 'preference', 'tier'];
+    const greKeywords = ['gre', 'testing', 'exam'];
+    const statusKeywords = ['status', 'state', 'stage', 'progress'];
+    const feeKeywords = ['fee', 'cost', 'app fee', 'application fee'];
+    const notesKeywords = ['note', 'comment', 'remark', 'requirement', 'checklist', 'details'];
+
+    for (let i = 0; i < Math.min(5, rows.length); i++) {
+      const rowHeaders = rows[i].map(h => String(h || '').trim().toLowerCase());
+      const foundUniv = rowHeaders.findIndex(h => univKeywords.some(k => h.includes(k)));
+      if (foundUniv !== -1) {
+        headerRowIndex = i;
+        idxUniv = foundUniv;
+        idxProg = rowHeaders.findIndex(h => progKeywords.some(k => h.includes(k)));
+        idxDegree = rowHeaders.findIndex(h => degreeKeywords.some(k => h.includes(k)));
+        idxCountry = rowHeaders.findIndex(h => countryKeywords.some(k => h.includes(k)));
+        idxDeadline = rowHeaders.findIndex(h => deadlineKeywords.some(k => h.includes(k)));
+        idxPriority = rowHeaders.findIndex(h => priorityKeywords.some(k => h.includes(k)));
+        idxGre = rowHeaders.findIndex(h => greKeywords.some(k => h.includes(k)));
+        idxStatus = rowHeaders.findIndex(h => statusKeywords.some(k => h.includes(k)));
+        idxFee = rowHeaders.findIndex(h => feeKeywords.some(k => h.includes(k)));
+        idxNotes = rowHeaders.findIndex(h => notesKeywords.some(k => h.includes(k)));
+        break;
+      }
+    }
+
+    // Strategy 2: If no explicit "university" header was matched, pick first column containing non-numeric text
+    if (idxUniv === -1) {
+      const sampleRow = rows[0];
+      for (let c = 0; c < sampleRow.length; c++) {
+        const val = String(sampleRow[c] || '').trim();
+        if (val && isNaN(val) && val.length > 2) {
+          idxUniv = c;
+          break;
+        }
+      }
+      if (idxUniv === -1) idxUniv = 0;
+    }
 
     const parsedApps = [];
+    const startDataRow = headerRowIndex === -1 ? 0 : headerRowIndex + 1;
 
-    for (let r = 1; r < rows.length; r++) {
+    for (let r = startDataRow; r < rows.length; r++) {
       const row = rows[r];
       if (!row || row.length === 0) continue;
 
-      const univName = idxUniv !== -1 && row[idxUniv] ? String(row[idxUniv]).trim() : '';
-      if (!univName) continue;
+      let univName = idxUniv !== -1 && row[idxUniv] !== undefined ? String(row[idxUniv]).trim() : '';
+
+      // Handle cases where Col 0 is a Serial Number (e.g. 1, 2, 3) instead of university name
+      if (!univName || (!isNaN(univName) && univName.length < 4)) {
+        if (row[idxUniv + 1] !== undefined && String(row[idxUniv + 1]).trim() && isNaN(String(row[idxUniv + 1]).trim())) {
+          univName = String(row[idxUniv + 1]).trim();
+        } else {
+          continue; // Skip invalid or non-data row
+        }
+      }
+
+      // Ignore title or header repeat rows
+      if (univName.toLowerCase().includes('university') && (univName.toLowerCase().includes('name') || univName.toLowerCase().includes('list'))) {
+        continue;
+      }
 
       const progName = idxProg !== -1 && row[idxProg] ? String(row[idxProg]).trim() : 'MS Program';
       const degreeName = idxDegree !== -1 && row[idxDegree] ? String(row[idxDegree]).trim() : 'MS';
@@ -467,26 +527,21 @@
       const feeVal = idxFee !== -1 && row[idxFee] ? parseFloat(row[idxFee]) || 75 : 75;
       const notesVal = idxNotes !== -1 && row[idxNotes] ? String(row[idxNotes]).trim() : '';
 
-      // Parse Date: Extract first date from range & ensure ALL dates are for the FUTURE
       const dateResult = parseExcelDate(rawDeadline);
-      const deadlineStr = dateResult.dateStr;
-      const verificationStatus = dateResult.verified ? 'Verified' : 'Needs Verification';
-
-      const id = 'excel_app_' + Date.now() + '_' + r;
 
       const appRecord = {
-        id: id,
+        id: 'excel_app_' + Date.now() + '_' + r + '_' + Math.floor(Math.random() * 1000),
         university: univName,
         program: progName,
         degree: degreeName,
         country: countryName,
         priority: sanitizePriority(priorityName),
         status: sanitizeStatus(statusName),
-        deadline: deadlineStr,
+        deadline: dateResult.dateStr,
         rawDeadlineText: dateResult.rawText,
         openingDate: '2026-09-01',
         deadlineType: 'Regular Round',
-        verificationStatus: verificationStatus,
+        verificationStatus: dateResult.verified ? 'Verified' : 'Needs Verification',
         officialSourceUrl: '',
         portalUrl: '',
         greRequirement: sanitizeGre(greRule),
@@ -499,10 +554,14 @@
       parsedApps.push(appRecord);
     }
 
+    if (parsedApps.length === 0) {
+      if (notify) alert('Could not extract any valid university records from this file. Please check your Excel structure.');
+      return;
+    }
+
     if (replaceMode || state.applications.length === 0) {
       state.applications = parsedApps;
     } else {
-      // Merge unique
       parsedApps.forEach(newApp => {
         const exists = state.applications.some(a => 
           a.university.toLowerCase() === newApp.university.toLowerCase() && 
@@ -516,7 +575,7 @@
     renderApp();
 
     if (notify) {
-      alert(`Loaded ${parsedApps.length} universities directly from your Excel spreadsheet!`);
+      alert(`🎉 Successfully imported ${parsedApps.length} universities from your spreadsheet!`);
     }
   }
 
@@ -2076,8 +2135,13 @@
 
             if (previewBox) previewBox.style.display = 'block';
             if (filenameEl) filenameEl.textContent = `📁 ${file.name}`;
-            if (summaryEl) summaryEl.textContent = `Ready to import! Detected sheet "${firstSheet}" with ~${rowCount} program entries.`;
+            if (summaryEl) summaryEl.textContent = `Loaded sheet "${firstSheet}" (~${rowCount} entries). Parsing...`;
             if (confirmBtn) confirmBtn.disabled = false;
+
+            // Instantly parse and import into dashboard
+            parseAndMergeWorkbook(loadedWorkbook, true, true);
+            const m = document.getElementById('modal-import');
+            if (m) m.classList.remove('active');
           } catch (err) {
             console.error('Error reading spreadsheet:', err);
             alert('Failed to parse spreadsheet file: ' + err.message);
