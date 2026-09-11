@@ -1,0 +1,21 @@
+{
+  "name": "targetms-gre-tracker",
+  "version": "1.0.0",
+  "description": "TargetMS - Free GRE & MS Application Deadline Tracker Dashboard",
+  "private": true,
+  "scripts": {
+    "dev": "npx serve .",
+    "build": "echo \"Static site build ready\"",
+    "start": "npx serve .",
+    "preview": "npx serve ."
+  },
+  "keywords": [
+    "gre",
+    "ms-application",
+    "deadline-tracker",
+    "university-tracker",
+    "vercel"
+  ],
+  "author": "TargetMS Team",
+  "license": "MIT"
+}
