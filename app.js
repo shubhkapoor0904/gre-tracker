@@ -1043,168 +1043,52 @@
     renderApp();
   };
 
-  // Add Custom Checklist Item
-  document.getElementById('btn-add-custom-req').addEventListener('click', () => {
-    if (!state.activeAppId) return;
-    const name = prompt('Enter custom requirement item name (e.g. Portfolio, Video Essay, Diversity Statement):');
-    if (!name) return;
-
-    const app = state.applications.find(a => a.id === state.activeAppId);
-    if (app) {
-      app.checklist.push({
-        id: 'req_custom_' + Date.now(),
-        name: name,
-        required: true,
-        status: 'Not Started'
-      });
-      saveDataToStorage();
-      window.openDetailDrawer(app.id);
-      renderApp();
-    }
-  });
-
-  // Save Drawer Notes
-  document.getElementById('btn-save-drawer-notes').addEventListener('click', () => {
-    if (!state.activeAppId) return;
-    const app = state.applications.find(a => a.id === state.activeAppId);
-    if (app) {
-      app.notes = document.getElementById('drawer-notes-input').value;
-      saveDataToStorage();
-      alert('Notes saved successfully!');
-    }
-  });
-
-  document.getElementById('drawer-btn-send-email').addEventListener('click', () => {
-    if (state.activeAppId) window.sendApplicationEmail(state.activeAppId);
-  });
-
-
   // --- ADD / EDIT APPLICATION FORM ---
 
-  function openAppFormModal(appToEdit = null) {
+  window.openAppFormModal = function (appToEdit = null) {
     const modal = document.getElementById('modal-app-form');
     const form = document.getElementById('app-form');
     const title = document.getElementById('form-modal-title');
 
-    form.reset();
+    if (!modal) return;
+    if (form) form.reset();
 
     if (appToEdit) {
-      title.textContent = `Edit Application — ${appToEdit.university}`;
-      document.getElementById('form-app-id').value = appToEdit.id;
-      document.getElementById('form-univ').value = appToEdit.university;
-      document.getElementById('form-program').value = appToEdit.program;
-      document.getElementById('form-degree').value = appToEdit.degree || 'MS';
-      document.getElementById('form-country').value = appToEdit.country || 'USA';
-      document.getElementById('form-priority').value = appToEdit.priority || 'Medium';
-      document.getElementById('form-status').value = appToEdit.status || 'Documents Pending';
-      document.getElementById('form-deadline').value = appToEdit.deadline || '';
-      document.getElementById('form-deadline-type').value = appToEdit.deadlineType || 'Regular Round';
-      document.getElementById('form-verification').value = appToEdit.verificationStatus || 'Verified';
-      document.getElementById('form-source-url').value = appToEdit.officialSourceUrl || '';
-      document.getElementById('form-portal-url').value = appToEdit.portalUrl || '';
-      document.getElementById('form-gre').value = appToEdit.greRequirement || 'Optional';
-      document.getElementById('form-english').value = appToEdit.englishRequirement || '';
-      document.getElementById('form-fee').value = appToEdit.appFee || 75;
-      document.getElementById('form-notes').value = appToEdit.notes || '';
+      if (title) title.textContent = `Edit Application — ${appToEdit.university}`;
+      const idEl = document.getElementById('form-app-id'); if (idEl) idEl.value = appToEdit.id;
+      const univEl = document.getElementById('form-univ'); if (univEl) univEl.value = appToEdit.university;
+      const progEl = document.getElementById('form-program'); if (progEl) progEl.value = appToEdit.program;
+      const degEl = document.getElementById('form-degree'); if (degEl) degEl.value = appToEdit.degree || 'MS';
+      const ctyEl = document.getElementById('form-country'); if (ctyEl) ctyEl.value = appToEdit.country || 'USA';
+      const prioEl = document.getElementById('form-priority'); if (prioEl) prioEl.value = appToEdit.priority || 'Medium';
+      const statEl = document.getElementById('form-status'); if (statEl) statEl.value = appToEdit.status || 'Documents Pending';
+      const deadEl = document.getElementById('form-deadline'); if (deadEl) deadEl.value = appToEdit.deadline || '';
+      const typeEl = document.getElementById('form-deadline-type'); if (typeEl) typeEl.value = appToEdit.deadlineType || 'Regular Round';
+      const verEl = document.getElementById('form-verification'); if (verEl) verEl.value = appToEdit.verificationStatus || 'Verified';
+      const srcEl = document.getElementById('form-source-url'); if (srcEl) srcEl.value = appToEdit.officialSourceUrl || '';
+      const portEl = document.getElementById('form-portal-url'); if (portEl) portEl.value = appToEdit.portalUrl || '';
+      const greEl = document.getElementById('form-gre'); if (greEl) greEl.value = appToEdit.greRequirement || 'Optional';
+      const engEl = document.getElementById('form-english'); if (engEl) engEl.value = appToEdit.englishRequirement || '';
+      const feeEl = document.getElementById('form-fee'); if (feeEl) feeEl.value = appToEdit.appFee || 75;
+      const noteEl = document.getElementById('form-notes'); if (noteEl) noteEl.value = appToEdit.notes || '';
     } else {
-      title.textContent = 'Add New University Application';
-      document.getElementById('form-app-id').value = '';
+      if (title) title.textContent = 'Add New University Application';
+      const idEl = document.getElementById('form-app-id');
+      if (idEl) idEl.value = '';
     }
 
     modal.classList.add('active');
-  }
+  };
 
-  document.getElementById('btn-save-app').addEventListener('click', (e) => {
-    e.preventDefault();
-    const id = document.getElementById('form-app-id').value;
-    const univ = document.getElementById('form-univ').value.trim();
-    const prog = document.getElementById('form-program').value.trim();
-    const deadline = document.getElementById('form-deadline').value;
+  window.closeDetailDrawer = function () {
+    const d = document.getElementById('drawer-detail');
+    if (d) d.classList.remove('active');
+  };
 
-    if (!univ || !prog) {
-      alert('Please fill in required fields (University and Program).');
-      return;
-    }
-
-    const verificationStatus = deadline ? 'Verified' : 'Needs Verification';
-
-    if (id) {
-      // Edit existing
-      const app = state.applications.find(a => a.id === id);
-      if (app) {
-        app.university = univ;
-        app.program = prog;
-        app.degree = document.getElementById('form-degree').value.trim();
-        app.country = document.getElementById('form-country').value.trim();
-        app.priority = document.getElementById('form-priority').value;
-        app.status = document.getElementById('form-status').value;
-        app.deadline = deadline;
-        app.deadlineType = document.getElementById('form-deadline-type').value;
-        app.verificationStatus = document.getElementById('form-verification').value || verificationStatus;
-        app.officialSourceUrl = document.getElementById('form-source-url').value.trim();
-        app.portalUrl = document.getElementById('form-portal-url').value.trim();
-        app.greRequirement = document.getElementById('form-gre').value;
-        app.englishRequirement = document.getElementById('form-english').value.trim();
-        app.appFee = parseFloat(document.getElementById('form-fee').value) || 0;
-        app.notes = document.getElementById('form-notes').value.trim();
-      }
-    } else {
-      // Create new
-      const newApp = {
-        id: 'app_user_' + Date.now(),
-        university: univ,
-        program: prog,
-        degree: document.getElementById('form-degree').value.trim() || 'MS',
-        country: document.getElementById('form-country').value.trim() || 'USA',
-        priority: document.getElementById('form-priority').value,
-        status: document.getElementById('form-status').value,
-        deadline: deadline,
-        rawDeadlineText: deadline,
-        openingDate: '2026-09-01',
-        deadlineType: document.getElementById('form-deadline-type').value,
-        verificationStatus: verificationStatus,
-        officialSourceUrl: document.getElementById('form-source-url').value.trim(),
-        portalUrl: document.getElementById('form-portal-url').value.trim(),
-        greRequirement: document.getElementById('form-gre').value,
-        englishRequirement: document.getElementById('form-english').value.trim(),
-        appFee: parseFloat(document.getElementById('form-fee').value) || 0,
-        notes: document.getElementById('form-notes').value.trim(),
-        checklist: DEFAULT_CHECKLIST_ITEMS.map(item => ({ ...item, status: 'Not Started' }))
-      };
-      state.applications.unshift(newApp);
-    }
-
-    saveDataToStorage();
-    document.getElementById('modal-app-form').classList.remove('active');
-    renderApp();
-  });
-
-  // Edit button inside Drawer
-  document.getElementById('drawer-btn-edit').addEventListener('click', () => {
-    if (!state.activeAppId) return;
-    const app = state.applications.find(a => a.id === state.activeAppId);
-    if (app) {
-      document.getElementById('drawer-detail').classList.remove('active');
-      openAppFormModal(app);
-    }
-  });
-
-  // Delete button inside Drawer
-  document.getElementById('drawer-btn-delete').addEventListener('click', () => {
-    if (!state.activeAppId) return;
-    const app = state.applications.find(a => a.id === state.activeAppId);
-    if (!app) return;
-
-    if (confirm(`Are you sure you want to delete ${app.university} — ${app.program}?`)) {
-      state.applications = state.applications.filter(a => a.id !== state.activeAppId);
-      saveDataToStorage();
-      document.getElementById('drawer-detail').classList.remove('active');
-      renderApp();
-    }
-  });
-
-
-  // --- CALENDAR & REMINDER GENERATION ---
+  window.closeAllModals = function () {
+    document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
+    document.querySelectorAll('.drawer-overlay').forEach(d => d.classList.remove('active'));
+  };
 
   // 1-Click Google Calendar Link Builder
   window.addGCalEvent = function (appId) {
@@ -1225,10 +1109,6 @@
     window.open(gcalUrl, '_blank');
   };
 
-  document.getElementById('drawer-btn-gcal').addEventListener('click', () => {
-    if (state.activeAppId) window.addGCalEvent(state.activeAppId);
-  });
-
   // `.ics` iCalendar File Generator
   window.downloadAppIcs = function (appId) {
     const app = state.applications.find(a => a.id === appId);
@@ -1239,15 +1119,8 @@
     generateAndDownloadIcs([app], `${app.university.replace(/\s+/g, '_')}_Deadline.ics`);
   };
 
-  document.getElementById('drawer-btn-ics').addEventListener('click', () => {
-    if (state.activeAppId) window.downloadAppIcs(state.activeAppId);
-  });
-
-  document.getElementById('btn-download-all-ics').addEventListener('click', () => {
-    generateAndDownloadIcs(state.applications, 'All_TargetMS_Deadlines.ics');
-  });
-
   function generateAndDownloadIcs(appList, filename) {
+
     let icsContent = `BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//TargetMS Tracker//NONSGML v1.0//EN\r\n`;
 
     appList.forEach(app => {
@@ -1277,278 +1150,181 @@
     link.click();
   }
 
-  // Browser Push Notifications
-  document.getElementById('btn-enable-browser-notif').addEventListener('click', () => {
-    if (!('Notification' in window)) {
-      alert('Desktop notifications are not supported by your browser.');
-      return;
+  // Helper function to safely bind event listeners without throwing errors if elements are missing
+  function bindEvent(id, event, handler) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener(event, handler);
     }
-
-    Notification.requestPermission().then(permission => {
-      if (permission === 'granted') {
-        alert('Browser Notifications Enabled! You will be notified when deadlines approach.');
-        new Notification('TargetMS Deadline Tracker', {
-          body: 'Notifications activated! We will remind you of upcoming university deadlines.',
-          icon: '🎓'
-        });
-      } else {
-        alert('Permission was denied for browser notifications.');
-      }
-    });
-  });
-
-
-  // --- USER PROFILE & EMAIL CENTER HANDLERS ---
-
-  document.getElementById('btn-save-profile').addEventListener('click', () => {
-    state.userProfile.name = document.getElementById('profile-name').value.trim();
-    state.userProfile.email = document.getElementById('profile-email').value.trim();
-    saveProfileToStorage();
-    alert('User profile settings saved!');
-  });
-
-  document.getElementById('btn-save-emailjs').addEventListener('click', () => {
-    state.userProfile.emailJsService = document.getElementById('emailjs-service-id').value.trim();
-    state.userProfile.emailJsTemplate = document.getElementById('emailjs-template-id').value.trim();
-    state.userProfile.emailJsKey = document.getElementById('emailjs-public-key').value.trim();
-    state.userProfile.autoEmail = document.getElementById('toggle-auto-email').checked;
-    saveProfileToStorage();
-    initEmailJsSDK();
-    alert('Weekly Digest Email settings saved!');
-  });
-
-  document.getElementById('btn-send-test-email').addEventListener('click', () => {
-    window.sendWeeklyTop7Digest(true);
-  });
-
-  document.getElementById('toggle-auto-email').addEventListener('change', (e) => {
-    state.userProfile.autoEmail = e.target.checked;
-    saveProfileToStorage();
-  });
-
-
-  // --- EXPORT & IMPORT UTILITIES ---
-
-  // Export Excel / CSV
-  document.getElementById('btn-export-excel').addEventListener('click', () => {
-    if (!window.XLSX) { alert('SheetJS library not loaded.'); return; }
-    
-    const exportData = state.applications.map(app => ({
-      University: app.university,
-      Program: app.program,
-      Degree: app.degree,
-      Country: app.country,
-      Priority: app.priority,
-      Status: app.status,
-      Deadline: app.deadline || app.rawDeadlineText || 'Needs Verification',
-      'Deadline Type': app.deadlineType,
-      'GRE Requirement': app.greRequirement,
-      'English Test': app.englishRequirement,
-      'Application Fee ($)': app.appFee,
-      'Completion %': calculateCompletion(app),
-      'Official Source URL': app.officialSourceUrl,
-      'Portal URL': app.portalUrl,
-      Notes: app.notes
-    }));
-
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Applications');
-    XLSX.writeFile(workbook, 'TargetMS_University_Tracker.xlsx');
-  });
-
-  document.getElementById('btn-export-csv').addEventListener('click', () => {
-    if (!window.XLSX) { alert('SheetJS library not loaded.'); return; }
-
-    const exportData = state.applications.map(app => ({
-      University: app.university,
-      Program: app.program,
-      Deadline: app.deadline || app.rawDeadlineText || 'Needs Verification',
-      Status: app.status,
-      Priority: app.priority,
-      GRE: app.greRequirement
-    }));
-
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const csv = XLSX.utils.sheet_to_csv(worksheet);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = 'TargetMS_Tracker.csv';
-    link.click();
-  });
-
-  // Export / Restore JSON Backup
-  document.getElementById('btn-export-json').addEventListener('click', () => {
-    const dataStr = JSON.stringify(state.applications, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = 'TargetMS_Backup.json';
-    link.click();
-  });
-
-  document.getElementById('restore-json-input').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const parsed = JSON.parse(event.target.result);
-        if (Array.isArray(parsed)) {
-          state.applications = parsed;
-          saveDataToStorage();
-          renderApp();
-          alert('Full backup restored successfully!');
-          document.getElementById('modal-export').classList.remove('active');
-        }
-      } catch (err) {
-        alert('Invalid JSON backup file format.');
-      }
-    };
-    reader.readAsText(file);
-  });
-
+  }
 
   // --- EVENT LISTENERS & MODAL HANDLERS ---
 
   function setupEventListeners() {
     // Toolbar Search & Filters
-    document.getElementById('search-input').addEventListener('input', (e) => {
+    bindEvent('search-input', 'input', (e) => {
       state.searchQuery = e.target.value;
       renderApplications();
     });
 
-    document.getElementById('filter-status').addEventListener('change', (e) => {
+    bindEvent('filter-status', 'change', (e) => {
       state.filterStatus = e.target.value;
       renderApplications();
     });
 
-    document.getElementById('filter-urgency').addEventListener('change', (e) => {
+    bindEvent('filter-urgency', 'change', (e) => {
       state.filterUrgency = e.target.value;
       renderApplications();
     });
 
-    document.getElementById('filter-priority').addEventListener('change', (e) => {
+    bindEvent('filter-priority', 'change', (e) => {
       state.filterPriority = e.target.value;
       renderApplications();
     });
 
-    document.getElementById('filter-gre').addEventListener('change', (e) => {
+    bindEvent('filter-gre', 'change', (e) => {
       state.filterGRE = e.target.value;
       renderApplications();
     });
 
-    document.getElementById('sort-by').addEventListener('change', (e) => {
+    bindEvent('sort-by', 'change', (e) => {
       state.sortBy = e.target.value;
       renderApplications();
     });
 
     // View Switcher Tabs
-    document.getElementById('view-tab-grid').addEventListener('click', () => {
+    bindEvent('view-tab-grid', 'click', () => {
       state.currentView = 'grid';
-      document.getElementById('view-tab-grid').classList.add('active');
-      document.getElementById('view-tab-table').classList.remove('active');
+      const gridBtn = document.getElementById('view-tab-grid');
+      const tableBtn = document.getElementById('view-tab-table');
+      if (gridBtn) gridBtn.classList.add('active');
+      if (tableBtn) tableBtn.classList.remove('active');
       renderApplications();
     });
 
-    document.getElementById('view-tab-table').addEventListener('click', () => {
+    bindEvent('view-tab-table', 'click', () => {
       state.currentView = 'table';
-      document.getElementById('view-tab-table').classList.add('active');
-      document.getElementById('view-tab-grid').classList.remove('active');
+      const gridBtn = document.getElementById('view-tab-grid');
+      const tableBtn = document.getElementById('view-tab-table');
+      if (tableBtn) tableBtn.classList.add('active');
+      if (gridBtn) gridBtn.classList.remove('active');
       renderApplications();
     });
 
     // Modal Triggers
-    document.getElementById('btn-add-app').addEventListener('click', () => openAppFormModal());
-    document.getElementById('empty-btn-add').addEventListener('click', () => openAppFormModal());
+    bindEvent('btn-add-app', 'click', () => openAppFormModal());
+    bindEvent('empty-btn-add', 'click', () => openAppFormModal());
 
-    document.getElementById('btn-email-center').addEventListener('click', () => {
-      document.getElementById('modal-email-center').classList.add('active');
+    bindEvent('btn-email-center', 'click', () => {
+      const m = document.getElementById('modal-email-center');
+      if (m) m.classList.add('active');
     });
 
-    document.getElementById('user-profile-pill').addEventListener('click', () => {
-      document.getElementById('modal-email-center').classList.add('active');
+    bindEvent('user-profile-pill', 'click', () => {
+      const m = document.getElementById('modal-email-center');
+      if (m) m.classList.add('active');
     });
 
-    document.getElementById('btn-import-excel').addEventListener('click', () => {
-      document.getElementById('modal-import').classList.add('active');
+    bindEvent('btn-import-excel', 'click', () => {
+      const m = document.getElementById('modal-import');
+      if (m) m.classList.add('active');
     });
 
-    document.getElementById('btn-sync-calendar').addEventListener('click', () => {
-      document.getElementById('modal-calendar-sync').classList.add('active');
+    bindEvent('btn-sync-calendar', 'click', () => {
+      const m = document.getElementById('modal-calendar-sync');
+      if (m) m.classList.add('active');
     });
 
-    document.getElementById('btn-export-modal').addEventListener('click', () => {
-      document.getElementById('modal-export').classList.add('active');
+    bindEvent('btn-export-modal', 'click', () => {
+      const m = document.getElementById('modal-export');
+      if (m) m.classList.add('active');
+    });
+
+    // Calendar & Notifications
+    bindEvent('btn-download-all-ics', 'click', () => {
+      generateAndDownloadIcs(state.applications, 'TargetMS_Deadlines.ics');
+    });
+
+    bindEvent('btn-enable-browser-notif', 'click', () => {
+      if (!('Notification' in window)) {
+        alert('Desktop notifications are not supported by your browser.');
+        return;
+      }
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          alert('Browser Notifications Enabled!');
+          new Notification('TargetMS Deadline Tracker', {
+            body: 'Notifications activated! We will remind you of upcoming deadlines.',
+            icon: '🎓'
+          });
+        } else {
+          alert('Permission was denied for browser notifications.');
+        }
+      });
     });
 
     // Profile & Email JS Handlers
-    const saveProfileBtn = document.getElementById('btn-save-profile');
-    if (saveProfileBtn) {
-      saveProfileBtn.addEventListener('click', () => {
-        const nameVal = document.getElementById('profile-name').value.trim();
-        const emailVal = document.getElementById('profile-email').value.trim();
-        if (emailVal) {
-          state.userProfile.name = nameVal || 'Applicant';
-          state.userProfile.email = emailVal;
-          saveDataToStorage();
-          document.getElementById('user-display-name').textContent = state.userProfile.name;
-          document.getElementById('user-display-email').textContent = state.userProfile.email;
-          alert('Profile saved successfully!');
-        } else {
-          alert('Please enter a valid email address.');
-        }
-      });
-    }
+    bindEvent('btn-save-profile', 'click', () => {
+      const nameEl = document.getElementById('profile-name');
+      const emailEl = document.getElementById('profile-email');
+      const nameVal = nameEl ? nameEl.value.trim() : '';
+      const emailVal = emailEl ? emailEl.value.trim() : '';
 
-    const saveEmailJsBtn = document.getElementById('btn-save-emailjs');
-    if (saveEmailJsBtn) {
-      saveEmailJsBtn.addEventListener('click', () => {
-        state.userProfile.emailJsService = document.getElementById('emailjs-service-id').value.trim();
-        state.userProfile.emailJsTemplate = document.getElementById('emailjs-template-id').value.trim();
-        state.userProfile.emailJsKey = document.getElementById('emailjs-public-key').value.trim();
+      if (emailVal) {
+        state.userProfile.name = nameVal || 'Applicant';
+        state.userProfile.email = emailVal;
         saveDataToStorage();
-        alert('EmailJS settings saved!');
-      });
-    }
+        const dispName = document.getElementById('user-display-name');
+        const dispEmail = document.getElementById('user-display-email');
+        if (dispName) dispName.textContent = state.userProfile.name;
+        if (dispEmail) dispEmail.textContent = state.userProfile.email;
+        alert('Profile saved successfully!');
+      } else {
+        alert('Please enter a valid email address.');
+      }
+    });
 
-    const sendTestEmailBtn = document.getElementById('btn-send-test-email');
-    if (sendTestEmailBtn) {
-      sendTestEmailBtn.addEventListener('click', () => {
-        window.sendWeeklyTop7Digest(true);
-      });
-    }
+    bindEvent('btn-save-emailjs', 'click', () => {
+      const sEl = document.getElementById('emailjs-service-id');
+      const tEl = document.getElementById('emailjs-template-id');
+      const kEl = document.getElementById('emailjs-public-key');
 
-    // Email Dispatch Modal Handlers
-    const openGmailBtn = document.getElementById('btn-open-web-gmail');
-    if (openGmailBtn) {
-      openGmailBtn.addEventListener('click', () => {
-        if (!currentPreviewEmail.recipient) return;
-        const su = encodeURIComponent(currentPreviewEmail.subject);
-        const body = encodeURIComponent(currentPreviewEmail.body);
-        const to = encodeURIComponent(currentPreviewEmail.recipient);
-        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${su}&body=${body}`;
-        window.open(gmailUrl, '_blank');
-      });
-    }
+      if (sEl) state.userProfile.emailJsService = sEl.value.trim();
+      if (tEl) state.userProfile.emailJsTemplate = tEl.value.trim();
+      if (kEl) state.userProfile.emailJsKey = kEl.value.trim();
+      saveDataToStorage();
+      alert('EmailJS settings saved!');
+    });
 
-    const copyEmailBtn = document.getElementById('btn-copy-email-text');
-    if (copyEmailBtn) {
-      copyEmailBtn.addEventListener('click', () => {
-        const fullText = `Subject: ${currentPreviewEmail.subject}\n\n${currentPreviewEmail.body}`;
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(fullText).then(() => {
-            alert('📋 Email digest copied to clipboard!');
-          }).catch(() => {
-            copyTextFallback();
-          });
-        } else {
-          copyTextFallback();
-        }
-      });
-    }
+    bindEvent('btn-send-test-email', 'click', () => {
+      window.sendWeeklyTop7Digest(true);
+    });
+
+    bindEvent('toggle-auto-email', 'change', (e) => {
+      state.userProfile.autoEmail = e.target.checked;
+      saveDataToStorage();
+    });
+
+    // Email Dispatch Modal Actions
+    bindEvent('btn-open-web-gmail', 'click', () => {
+      if (!currentPreviewEmail.recipient) return;
+      const su = encodeURIComponent(currentPreviewEmail.subject);
+      const body = encodeURIComponent(currentPreviewEmail.body);
+      const to = encodeURIComponent(currentPreviewEmail.recipient);
+      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${su}&body=${body}`;
+      window.open(gmailUrl, '_blank');
+    });
+
+    bindEvent('btn-copy-email-text', 'click', () => {
+      const fullText = `Subject: ${currentPreviewEmail.subject}\n\n${currentPreviewEmail.body}`;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(fullText).then(() => {
+          alert('📋 Email digest copied to clipboard!');
+        }).catch(() => copyTextFallback());
+      } else {
+        copyTextFallback();
+      }
+    });
 
     function copyTextFallback() {
       const copyBox = document.getElementById('preview-email-body');
@@ -1559,29 +1335,244 @@
       }
     }
 
-    const openDesktopMailBtn = document.getElementById('btn-open-desktop-mail');
-    if (openDesktopMailBtn) {
-      openDesktopMailBtn.addEventListener('click', () => {
-        if (!currentPreviewEmail.recipient) return;
-        const su = encodeURIComponent(currentPreviewEmail.subject);
-        const body = encodeURIComponent(currentPreviewEmail.body);
-        window.location.href = `mailto:${currentPreviewEmail.recipient}?subject=${su}&body=${body}`;
-      });
-    }
+    bindEvent('btn-open-desktop-mail', 'click', () => {
+      if (!currentPreviewEmail.recipient) return;
+      const su = encodeURIComponent(currentPreviewEmail.subject);
+      const body = encodeURIComponent(currentPreviewEmail.body);
+      window.location.href = `mailto:${currentPreviewEmail.recipient}?subject=${su}&body=${body}`;
+    });
 
+    // Export & Restore Handlers
+    bindEvent('btn-export-excel', 'click', () => {
+      if (!window.XLSX) { alert('SheetJS library not loaded.'); return; }
+      const exportData = state.applications.map(app => ({
+        University: app.university,
+        Program: app.program,
+        Degree: app.degree,
+        Country: app.country,
+        Priority: app.priority,
+        Status: app.status,
+        Deadline: app.deadline || app.rawDeadlineText || 'Needs Verification',
+        'Deadline Type': app.deadlineType,
+        'GRE Requirement': app.greRequirement,
+        'English Test': app.englishRequirement,
+        'Application Fee ($)': app.appFee,
+        'Completion %': calculateCompletion(app),
+        'Official Source URL': app.officialSourceUrl,
+        'Portal URL': app.portalUrl,
+        Notes: app.notes
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Applications');
+      XLSX.writeFile(workbook, 'TargetMS_University_Tracker.xlsx');
+    });
+
+    bindEvent('btn-export-csv', 'click', () => {
+      if (!window.XLSX) { alert('SheetJS library not loaded.'); return; }
+      const exportData = state.applications.map(app => ({
+        University: app.university,
+        Program: app.program,
+        Deadline: app.deadline || app.rawDeadlineText || 'Needs Verification',
+        Status: app.status,
+        Priority: app.priority,
+        GRE: app.greRequirement
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const csv = XLSX.utils.sheet_to_csv(worksheet);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'TargetMS_Tracker.csv';
+      link.click();
+    });
+
+    bindEvent('btn-export-json', 'click', () => {
+      const dataStr = JSON.stringify(state.applications, null, 2);
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'TargetMS_Backup.json';
+      link.click();
+    });
+
+    bindEvent('restore-json-input', 'change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const parsed = JSON.parse(event.target.result);
+          if (Array.isArray(parsed)) {
+            state.applications = parsed;
+            saveDataToStorage();
+            renderApp();
+            alert('Full backup restored successfully!');
+            const modalExp = document.getElementById('modal-export');
+            if (modalExp) modalExp.classList.remove('active');
+          }
+        } catch (err) {
+          alert('Invalid JSON backup file format.');
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    // Drawer Action Handlers
+    bindEvent('btn-add-custom-req', 'click', () => {
+      if (!state.activeAppId) return;
+      const name = prompt('Enter custom requirement item name (e.g. Portfolio, Video Essay):');
+      if (!name) return;
+      const app = state.applications.find(a => a.id === state.activeAppId);
+      if (app) {
+        app.checklist.push({
+          id: 'req_custom_' + Date.now(),
+          name: name,
+          required: true,
+          status: 'Not Started'
+        });
+        saveDataToStorage();
+        window.openDetailDrawer(app.id);
+        renderApp();
+      }
+    });
+
+    bindEvent('btn-save-drawer-notes', 'click', () => {
+      if (!state.activeAppId) return;
+      const app = state.applications.find(a => a.id === state.activeAppId);
+      if (app) {
+        const input = document.getElementById('drawer-notes-input');
+        if (input) app.notes = input.value;
+        saveDataToStorage();
+        alert('Notes saved successfully!');
+      }
+    });
+
+    bindEvent('drawer-btn-send-email', 'click', () => {
+      if (state.activeAppId) window.sendApplicationEmail(state.activeAppId);
+    });
+
+    bindEvent('drawer-btn-gcal', 'click', () => {
+      if (state.activeAppId) window.addGCalEvent(state.activeAppId);
+    });
+
+    bindEvent('drawer-btn-ics', 'click', () => {
+      if (state.activeAppId) window.downloadAppIcs(state.activeAppId);
+    });
+
+    bindEvent('drawer-btn-edit', 'click', () => {
+      if (!state.activeAppId) return;
+      const app = state.applications.find(a => a.id === state.activeAppId);
+      if (app) {
+        window.closeDetailDrawer();
+        window.openAppFormModal(app);
+      }
+    });
+
+    bindEvent('drawer-btn-delete', 'click', () => {
+      if (!state.activeAppId) return;
+      const app = state.applications.find(a => a.id === state.activeAppId);
+      if (!app) return;
+      if (confirm(`Are you sure you want to delete ${app.university} — ${app.program}?`)) {
+        state.applications = state.applications.filter(a => a.id !== state.activeAppId);
+        saveDataToStorage();
+        window.closeDetailDrawer();
+        renderApp();
+      }
+    });
+
+    // Save Application Form Listener
+    bindEvent('btn-save-app', 'click', (e) => {
+      e.preventDefault();
+      const id = document.getElementById('form-app-id') ? document.getElementById('form-app-id').value : '';
+      const univEl = document.getElementById('form-univ');
+      const progEl = document.getElementById('form-program');
+      const univ = univEl ? univEl.value.trim() : '';
+      const prog = progEl ? progEl.value.trim() : '';
+      const deadline = document.getElementById('form-deadline') ? document.getElementById('form-deadline').value : '';
+
+      if (!univ || !prog) {
+        alert('Please fill in required fields (University and Program).');
+        return;
+      }
+
+      const verificationStatus = deadline ? 'Verified' : 'Needs Verification';
+
+      if (id) {
+        const app = state.applications.find(a => a.id === id);
+        if (app) {
+          app.university = univ;
+          app.program = prog;
+          app.degree = document.getElementById('form-degree') ? document.getElementById('form-degree').value.trim() : 'MS';
+          app.country = document.getElementById('form-country') ? document.getElementById('form-country').value.trim() : 'USA';
+          app.priority = document.getElementById('form-priority') ? document.getElementById('form-priority').value : 'Medium';
+          app.status = document.getElementById('form-status') ? document.getElementById('form-status').value : 'Documents Pending';
+          app.deadline = deadline;
+          app.deadlineType = document.getElementById('form-deadline-type') ? document.getElementById('form-deadline-type').value : 'Regular Round';
+          app.verificationStatus = (document.getElementById('form-verification') && document.getElementById('form-verification').value) || verificationStatus;
+          app.officialSourceUrl = document.getElementById('form-source-url') ? document.getElementById('form-source-url').value.trim() : '';
+          app.portalUrl = document.getElementById('form-portal-url') ? document.getElementById('form-portal-url').value.trim() : '';
+          app.greRequirement = document.getElementById('form-gre') ? document.getElementById('form-gre').value : 'Optional';
+          app.englishRequirement = document.getElementById('form-english') ? document.getElementById('form-english').value.trim() : '';
+          app.appFee = document.getElementById('form-fee') ? (parseFloat(document.getElementById('form-fee').value) || 0) : 0;
+          app.notes = document.getElementById('form-notes') ? document.getElementById('form-notes').value.trim() : '';
+        }
+      } else {
+        const newApp = {
+          id: 'app_user_' + Date.now(),
+          university: univ,
+          program: prog,
+          degree: (document.getElementById('form-degree') && document.getElementById('form-degree').value.trim()) || 'MS',
+          country: (document.getElementById('form-country') && document.getElementById('form-country').value.trim()) || 'USA',
+          priority: document.getElementById('form-priority') ? document.getElementById('form-priority').value : 'Medium',
+          status: document.getElementById('form-status') ? document.getElementById('form-status').value : 'Documents Pending',
+          deadline: deadline,
+          rawDeadlineText: deadline,
+          openingDate: '2026-09-01',
+          deadlineType: document.getElementById('form-deadline-type') ? document.getElementById('form-deadline-type').value : 'Regular Round',
+          verificationStatus: verificationStatus,
+          officialSourceUrl: document.getElementById('form-source-url') ? document.getElementById('form-source-url').value.trim() : '',
+          portalUrl: document.getElementById('form-portal-url') ? document.getElementById('form-portal-url').value.trim() : '',
+          greRequirement: document.getElementById('form-gre') ? document.getElementById('form-gre').value : 'Optional',
+          englishRequirement: document.getElementById('form-english') ? document.getElementById('form-english').value.trim() : '',
+          appFee: document.getElementById('form-fee') ? (parseFloat(document.getElementById('form-fee').value) || 0) : 0,
+          notes: document.getElementById('form-notes') ? document.getElementById('form-notes').value.trim() : '',
+          checklist: DEFAULT_CHECKLIST_ITEMS.map(item => ({ ...item, status: 'Not Started' }))
+        };
+        state.applications.unshift(newApp);
+      }
+
+      saveDataToStorage();
+      const modalApp = document.getElementById('modal-app-form');
+      if (modalApp) modalApp.classList.remove('active');
+      renderApp();
+    });
 
     // Close Modals & Drawers
     document.querySelectorAll('.close-modal').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
-      });
+      btn.addEventListener('click', () => window.closeAllModals());
     });
 
     document.querySelectorAll('.close-drawer').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.getElementById('drawer-detail').classList.remove('active');
+      btn.addEventListener('click', () => window.closeDetailDrawer());
+    });
+
+    // Click backdrop overlay to close
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.classList.remove('active');
       });
     });
+
+    document.querySelectorAll('.drawer-overlay').forEach(drawer => {
+      drawer.addEventListener('click', (e) => {
+        if (e.target === drawer) drawer.classList.remove('active');
+      });
+    });
+
 
     // Drag and drop Excel Upload
     const dropZone = document.getElementById('drop-zone');
@@ -1590,20 +1581,22 @@
 
     let loadedWorkbook = null;
 
-    dropZone.addEventListener('click', () => fileInput.click());
+    if (dropZone && fileInput) {
+      dropZone.addEventListener('click', () => fileInput.click());
 
-    fileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) handleExcelFile(file);
-    });
+      fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) handleExcelFile(file);
+      });
 
-    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = '#fff'; });
-    dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = 'var(--primary)'; });
-    dropZone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      dropZone.style.borderColor = 'var(--primary)';
-      if (e.dataTransfer.files.length > 0) handleExcelFile(e.dataTransfer.files[0]);
-    });
+      dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = '#fff'; });
+      dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = 'var(--primary)'; });
+      dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = 'var(--primary)';
+        if (e.dataTransfer.files.length > 0) handleExcelFile(e.dataTransfer.files[0]);
+      });
+    }
 
     function handleExcelFile(file) {
       const reader = new FileReader();
@@ -1611,22 +1604,28 @@
         const data = new Uint8Array(event.target.result);
         loadedWorkbook = XLSX.read(data, { type: 'array' });
         
-        document.getElementById('import-preview-box').style.display = 'block';
-        document.getElementById('preview-filename').textContent = `File Loaded: ${file.name}`;
-        confirmBtn.disabled = false;
+        const previewBox = document.getElementById('import-preview-box');
+        const filenameEl = document.getElementById('preview-filename');
+        if (previewBox) previewBox.style.display = 'block';
+        if (filenameEl) filenameEl.textContent = `File Loaded: ${file.name}`;
+        if (confirmBtn) confirmBtn.disabled = false;
       };
       reader.readAsArrayBuffer(file);
     }
 
-    confirmBtn.addEventListener('click', () => {
-      if (loadedWorkbook) {
-        parseAndMergeWorkbook(loadedWorkbook, true, true);
-        document.getElementById('modal-import').classList.remove('active');
-      }
-    });
+    if (confirmBtn) {
+      confirmBtn.addEventListener('click', () => {
+        if (loadedWorkbook) {
+          parseAndMergeWorkbook(loadedWorkbook, true, true);
+          const m = document.getElementById('modal-import');
+          if (m) m.classList.remove('active');
+        }
+      });
+    }
   }
 
   // Launch on DOM ready
   document.addEventListener('DOMContentLoaded', init);
 
 })();
+
