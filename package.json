@@ -5,7 +5,6 @@
   "private": true,
   "scripts": {
     "dev": "npx serve .",
-    "build": "echo \"Static site build ready\"",
     "start": "npx serve .",
     "preview": "npx serve ."
   },
