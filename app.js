@@ -1205,14 +1205,25 @@
   };
 
   // `.ics` iCalendar File Generator
+  window.downloadAllIcs = function () {
+    const validApps = state.applications.filter(a => a.deadline);
+    if (validApps.length === 0) {
+      alert('No verified application deadlines found to export to calendar.');
+      return;
+    }
+    generateAndDownloadIcs(validApps, 'TargetMS_All_Deadlines.ics');
+  };
+
   window.downloadAppIcs = function (appId) {
-    const app = state.applications.find(a => a.id === appId);
+    const targetId = appId || state.activeAppId;
+    const app = state.applications.find(a => a.id === targetId);
     if (!app || !app.deadline) {
       alert('Cannot export .ics calendar without a verified deadline date.');
       return;
     }
     generateAndDownloadIcs([app], `${app.university.replace(/\s+/g, '_')}_Deadline.ics`);
   };
+
 
   function generateAndDownloadIcs(appList, filename) {
 
@@ -1337,7 +1348,7 @@
 
     // Calendar & Notifications
     bindEvent('btn-download-all-ics', 'click', () => {
-      generateAndDownloadIcs(state.applications, 'TargetMS_Deadlines.ics');
+      window.downloadAllIcs();
     });
 
     bindEvent('btn-enable-browser-notif', 'click', () => {
