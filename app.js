@@ -1512,6 +1512,66 @@
     generateAndDownloadIcs([app], `${app.university.replace(/\s+/g, '_')}_Deadline.ics`);
   };
 
+  // Robust Desktop & Browser Notification Trigger (Works with direct clicks & file:// protocols)
+  window.enableBrowserNotif = function () {
+    if (!('Notification' in window)) {
+      alert('Desktop / browser notifications are not supported by your current web browser.');
+      return;
+    }
+
+    if (Notification.permission === 'granted') {
+      alert('✅ Browser Notifications are ALREADY ENABLED!\n\nTargetMS will trigger native alerts whenever deadline reminders approach.');
+      try {
+        new Notification('TargetMS Deadline Tracker', {
+          body: 'Browser notifications active & healthy!',
+          icon: '🎓'
+        });
+      } catch (e) { console.warn('Notification trigger warning:', e); }
+      return;
+    }
+
+    if (Notification.permission === 'denied') {
+      alert('⚠️ Browser notification permission is currently DENIED in your browser site settings.\n\nTo enable:\n1. Click the site settings / lock icon next to your URL bar.\n2. Change Notifications to "Allow".\n3. Refresh the page!');
+      return;
+    }
+
+    try {
+      // Support both Promise and Callback browser implementations
+      const req = Notification.requestPermission();
+      if (req && typeof req.then === 'function') {
+        req.then(permission => handlePermissionResult(permission)).catch(err => {
+          console.warn('Notification permission error:', err);
+          showFileProtocolNotice();
+        });
+      } else {
+        Notification.requestPermission(handlePermissionResult);
+      }
+    } catch (err) {
+      console.warn('Notification request error:', err);
+      showFileProtocolNotice();
+    }
+
+    function handlePermissionResult(permission) {
+      if (permission === 'granted') {
+        alert('🎉 Browser Notifications Enabled Successfully!\n\nYou will receive native desktop alerts for approaching deadlines.');
+        try {
+          new Notification('TargetMS Deadline Tracker', {
+            body: 'Notifications activated! We will remind you of upcoming deadlines.',
+            icon: '🎓'
+          });
+        } catch (e) { console.warn('Notification trigger warning:', e); }
+      } else {
+        alert('Notification permission was not granted. You can still download .ics Calendar files and send Email alerts 100% free!');
+      }
+    }
+
+    function showFileProtocolNotice() {
+      if (window.location.protocol === 'file:') {
+        alert('Notice: Some web browsers (like Chrome/Brave) restrict Push Notifications over local file:// URLs.\n\nFor 100% notification support:\n• Use .ics Calendar Downloads (works everywhere!)\n• Or serve via local web server (e.g. Live Server / localhost).');
+      }
+    }
+  };
+
 
   function generateAndDownloadIcs(appList, filename) {
 
@@ -1644,21 +1704,7 @@
     });
 
     bindEvent('btn-enable-browser-notif', 'click', () => {
-      if (!('Notification' in window)) {
-        alert('Desktop notifications are not supported by your browser.');
-        return;
-      }
-      Notification.requestPermission().then(permission => {
-        if (permission === 'granted') {
-          alert('Browser Notifications Enabled!');
-          new Notification('TargetMS Deadline Tracker', {
-            body: 'Notifications activated! We will remind you of upcoming deadlines.',
-            icon: '🎓'
-          });
-        } else {
-          alert('Permission was denied for browser notifications.');
-        }
-      });
+      window.enableBrowserNotif();
     });
 
     // Profile & Email JS Handlers
