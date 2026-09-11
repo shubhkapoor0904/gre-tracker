@@ -428,23 +428,25 @@
       return;
     }
 
-    // Smart Header Mapping
+    // Smart Header Mapping with ultra-flexible fuzzy matching & column fallbacks
     const headers = rows[0].map(h => String(h || '').trim().toLowerCase());
     
     function findCol(keywords) {
       return headers.findIndex(h => keywords.some(k => h.includes(k)));
     }
 
-    const idxUniv = findCol(['university', 'college', 'school', 'institution']);
-    const idxProg = findCol(['program', 'course', 'major', 'department', 'field']);
-    const idxDegree = findCol(['degree', 'qualification', 'level']);
-    const idxCountry = findCol(['country', 'location']);
-    const idxDeadline = findCol(['deadline', 'due date', 'date', 'due']);
-    const idxPriority = findCol(['priority', 'importance', 'preference']);
-    const idxGre = findCol(['gre']);
-    const idxStatus = findCol(['status', 'state', 'stage']);
-    const idxFee = findCol(['fee', 'cost']);
-    const idxNotes = findCol(['note', 'comment', 'remark', 'requirement']);
+    let idxUniv = findCol(['university', 'college', 'school', 'institution', 'univ', 'target', 'name', 'colleges', 's.no', 'sr']);
+    if (idxUniv === -1) idxUniv = 0; // Fallback to first column if no header matches
+
+    const idxProg = findCol(['program', 'course', 'major', 'department', 'field', 'track']);
+    const idxDegree = findCol(['degree', 'qualification', 'level', 'type']);
+    const idxCountry = findCol(['country', 'location', 'region', 'state']);
+    const idxDeadline = findCol(['deadline', 'due date', 'date', 'due', 'last date']);
+    const idxPriority = findCol(['priority', 'importance', 'preference', 'tier']);
+    const idxGre = findCol(['gre', 'testing', 'exam']);
+    const idxStatus = findCol(['status', 'state', 'stage', 'progress']);
+    const idxFee = findCol(['fee', 'cost', 'app fee', 'application fee']);
+    const idxNotes = findCol(['note', 'comment', 'remark', 'requirement', 'checklist', 'details']);
 
     const parsedApps = [];
 
@@ -2026,7 +2028,15 @@
     let loadedWorkbook = null;
 
     if (dropZone && fileInput) {
-      dropZone.addEventListener('click', () => fileInput.click());
+      dropZone.addEventListener('click', (e) => {
+        if (e.target !== fileInput) {
+          fileInput.click();
+        }
+      });
+
+      fileInput.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
 
       fileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
@@ -2043,19 +2053,47 @@
     }
 
     function handleExcelFile(file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const data = new Uint8Array(event.target.result);
-        loadedWorkbook = XLSX.read(data, { type: 'array' });
-        
-        const previewBox = document.getElementById('import-preview-box');
-        const filenameEl = document.getElementById('preview-filename');
-        if (previewBox) previewBox.style.display = 'block';
-        if (filenameEl) filenameEl.textContent = `File Loaded: ${file.name}`;
-        if (confirmBtn) confirmBtn.disabled = false;
-      };
-      reader.readAsArrayBuffer(file);
+      if (!window.XLSX) {
+        alert('The Excel parsing engine (SheetJS) is still loading or blocked. Please refresh the page and try again.');
+        return;
+      }
+
+      try {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const data = new Uint8Array(event.target.result);
+            loadedWorkbook = XLSX.read(data, { type: 'array' });
+            
+            const previewBox = document.getElementById('import-preview-box');
+            const filenameEl = document.getElementById('preview-filename');
+            const summaryEl = document.getElementById('preview-summary');
+
+            const firstSheet = loadedWorkbook.SheetNames[0];
+            const sheet = loadedWorkbook.Sheets[firstSheet];
+            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+            const rowCount = Math.max(0, rows.length - 1);
+
+            if (previewBox) previewBox.style.display = 'block';
+            if (filenameEl) filenameEl.textContent = `📁 ${file.name}`;
+            if (summaryEl) summaryEl.textContent = `Ready to import! Detected sheet "${firstSheet}" with ~${rowCount} program entries.`;
+            if (confirmBtn) confirmBtn.disabled = false;
+          } catch (err) {
+            console.error('Error reading spreadsheet:', err);
+            alert('Failed to parse spreadsheet file: ' + err.message);
+          } finally {
+            if (fileInput) fileInput.value = '';
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      } catch (err) {
+        console.error('FileReader error:', err);
+        alert('File reading error: ' + err.message);
+      }
     }
+
+    // Expose globally for backup access
+    window.handleExcelFile = handleExcelFile;
 
     if (confirmBtn) {
       confirmBtn.addEventListener('click', () => {
@@ -2063,6 +2101,8 @@
           parseAndMergeWorkbook(loadedWorkbook, true, true);
           const m = document.getElementById('modal-import');
           if (m) m.classList.remove('active');
+        } else {
+          alert('Please select an Excel (.xlsx/.xls) or CSV file first.');
         }
       });
     }
