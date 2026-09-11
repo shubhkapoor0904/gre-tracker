@@ -91,9 +91,36 @@ Send **1 consolidated weekly digest email** every Sunday morning summarizing upc
 
 ---
 
-## 🚀 How to Run
+## 🚀 How to Run Locally
 
 1. Simply open [`index.html`](file:///d:/gre%20tracker/index.html) in any modern web browser (Google Chrome, Microsoft Edge, Firefox, Safari).
-2. Click **"📧 Email Alerts & Profile"** or the user pill in the header to set recipient email address (`sarah.gre2026@gmail.com`).
-3. Use the **"📧 Email"** buttons on any card to send deadline alerts directly to your inbox!
-4. Click **"Import Excel / CSV"** at the top right of the application header to upload `Colleges.xlsx` at any time!
+2. Or serve locally with `npm run dev` or `npx serve .`
+3. Click **"📧 Email Alerts & Profile"** or the user pill in the header to set recipient email address (`sarah.gre2026@gmail.com`).
+4. Use the **"📧 Email"** buttons on any card to send deadline alerts directly to your inbox!
+5. Click **"Import Excel / CSV"** at the top right of the application header to upload `Colleges.xlsx` at any time!
+
+---
+
+## ⚡ Deploying to Vercel (1-Click Ready)
+
+TargetMS is 100% configured for Vercel static deployment out of the box!
+
+### Option A: Via Vercel Dashboard (Recommended)
+1. Push this repository to GitHub, GitLab, or Bitbucket.
+2. Go to [Vercel Dashboard](https://vercel.com/new) and click **"Add New..." → "Project"**.
+3. Import your target repository.
+4. Vercel automatically detects static configuration (`vercel.json` and `package.json`). Click **Deploy**.
+5. Your TargetMS Tracker is live with a global HTTPS URL!
+
+### Option B: Via Vercel CLI
+```bash
+# 1. Install Vercel CLI globally
+npm i -g vercel
+
+# 2. Deploy directly from repository root
+vercel
+
+# 3. Deploy to production domain
+vercel --prod
+```
+
