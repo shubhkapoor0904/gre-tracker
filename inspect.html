@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Inspect Colleges.xlsx</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+  <h1>Inspecting Colleges.xlsx</h1>
+  <pre id="output">Loading...</pre>
+  <script>
+    async function inspect() {
+      try {
+        const response = await fetch('./Colleges.xlsx');
+        const arrayBuffer = await response.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const result = {
+          sheetNames: workbook.SheetNames,
+          sheets: {}
+        };
+        for (const name of workbook.SheetNames) {
+          const sheet = workbook.Sheets[name];
+          result.sheets[name] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+        }
+        document.getElementById('output').textContent = JSON.stringify(result, null, 2);
+      } catch (err) {
+        document.getElementById('output').textContent = 'Error: ' + err.message + '\n' + err.stack;
+      }
+    }
+    inspect();
+  </script>
+</body>
+</html>
