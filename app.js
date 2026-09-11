@@ -69,17 +69,259 @@
     setupEventListeners();
   }
 
+  // Default Pre-loaded Seed Applications (Ensures immediate data display even over direct file:// protocol)
+  const SEED_APPLICATIONS = [
+    {
+      id: 'app_seed_1',
+      university: 'Purdue University',
+      program: 'MS Computer Science',
+      degree: 'MS',
+      country: 'USA',
+      priority: 'High',
+      status: 'Documents Pending',
+      deadline: '2026-12-01',
+      rawDeadlineText: 'Dec 1, 2026',
+      openingDate: '2026-09-01',
+      deadlineType: 'Regular Round',
+      verificationStatus: 'Verified',
+      officialSourceUrl: 'https://cs.purdue.edu/admissions/grad/deadlines.html',
+      portalUrl: 'https://gradapply.purdue.edu/apply/',
+      greRequirement: 'Optional',
+      englishRequirement: 'TOEFL 100+ / IELTS 7.5',
+      appFee: 75,
+      notes: 'Requires 3 LORs, SOP, transcripts. GRE score optional for CS track.',
+      checklist: [
+        { id: 'req_resume', name: 'Resume / CV', required: true, status: 'Completed' },
+        { id: 'req_sop', name: 'Statement of Purpose (SOP)', required: true, status: 'In Progress' },
+        { id: 'req_lor1', name: 'Letter of Recommendation (LOR 1)', required: true, status: 'Completed' },
+        { id: 'req_lor2', name: 'Letter of Recommendation (LOR 2)', required: true, status: 'Completed' },
+        { id: 'req_lor3', name: 'Letter of Recommendation (LOR 3)', required: true, status: 'In Progress' },
+        { id: 'req_transcripts', name: 'Official / Unofficial Transcripts', required: true, status: 'Completed' },
+        { id: 'req_gre', name: 'GRE General Score', required: false, status: 'Not Started' },
+        { id: 'req_english', name: 'TOEFL / IELTS Score Report', required: true, status: 'Completed' },
+        { id: 'req_app_form', name: 'Online Application Form', required: true, status: 'In Progress' },
+        { id: 'req_app_fee', name: 'Application Fee Payment', required: true, status: 'Not Started' },
+        { id: 'req_final_sub', name: 'Final Application Submission', required: true, status: 'Not Started' }
+      ]
+    },
+    {
+      id: 'app_seed_2',
+      university: 'University of Illinois Urbana-Champaign',
+      program: 'MS Computer Science',
+      degree: 'MS',
+      country: 'USA',
+      priority: 'High',
+      status: 'Documents Pending',
+      deadline: '2026-12-15',
+      rawDeadlineText: 'Dec 15, 2026',
+      openingDate: '2026-09-01',
+      deadlineType: 'Priority Round',
+      verificationStatus: 'Verified',
+      officialSourceUrl: 'https://cs.illinois.edu/admissions/graduate',
+      portalUrl: 'https://grad.illinois.edu/admissions/apply',
+      greRequirement: 'Not Required',
+      englishRequirement: 'TOEFL 103+ / IELTS 7.5',
+      appFee: 90,
+      notes: 'Top target university. Focus SOP on distributed systems research.',
+      checklist: [
+        { id: 'req_resume', name: 'Resume / CV', required: true, status: 'Completed' },
+        { id: 'req_sop', name: 'Statement of Purpose (SOP)', required: true, status: 'In Progress' },
+        { id: 'req_lor1', name: 'Letter of Recommendation (LOR 1)', required: true, status: 'Completed' },
+        { id: 'req_lor2', name: 'Letter of Recommendation (LOR 2)', required: true, status: 'Completed' },
+        { id: 'req_lor3', name: 'Letter of Recommendation (LOR 3)', required: true, status: 'Completed' },
+        { id: 'req_transcripts', name: 'Official / Unofficial Transcripts', required: true, status: 'Completed' },
+        { id: 'req_gre', name: 'GRE General Score', required: false, status: 'Not Started' },
+        { id: 'req_english', name: 'TOEFL / IELTS Score Report', required: true, status: 'Completed' },
+        { id: 'req_app_form', name: 'Online Application Form', required: true, status: 'Completed' },
+        { id: 'req_app_fee', name: 'Application Fee Payment', required: true, status: 'Not Started' },
+        { id: 'req_final_sub', name: 'Final Application Submission', required: true, status: 'Not Started' }
+      ]
+    },
+    {
+      id: 'app_seed_3',
+      university: 'Carnegie Mellon University',
+      program: 'MS Software Engineering',
+      degree: 'MS',
+      country: 'USA',
+      priority: 'High',
+      status: 'Researching',
+      deadline: '2026-12-10',
+      rawDeadlineText: 'Dec 10, 2026',
+      openingDate: '2026-09-01',
+      deadlineType: 'Early Action',
+      verificationStatus: 'Verified',
+      officialSourceUrl: 'https://csd.cmu.edu/academics/master-programs',
+      portalUrl: 'https://applygrad.cs.cmu.edu/apply/',
+      greRequirement: 'Optional',
+      englishRequirement: 'TOEFL 100+ / IELTS 7.5',
+      appFee: 100,
+      notes: 'Early deadline for merit scholarship consideration.',
+      checklist: [
+        { id: 'req_resume', name: 'Resume / CV', required: true, status: 'Completed' },
+        { id: 'req_sop', name: 'Statement of Purpose (SOP)', required: true, status: 'Not Started' },
+        { id: 'req_lor1', name: 'Letter of Recommendation (LOR 1)', required: true, status: 'In Progress' },
+        { id: 'req_lor2', name: 'Letter of Recommendation (LOR 2)', required: true, status: 'In Progress' },
+        { id: 'req_lor3', name: 'Letter of Recommendation (LOR 3)', required: true, status: 'Not Started' },
+        { id: 'req_transcripts', name: 'Official / Unofficial Transcripts', required: true, status: 'Completed' },
+        { id: 'req_gre', name: 'GRE General Score', required: false, status: 'Not Started' },
+        { id: 'req_english', name: 'TOEFL / IELTS Score Report', required: true, status: 'Completed' },
+        { id: 'req_app_form', name: 'Online Application Form', required: true, status: 'Not Started' },
+        { id: 'req_app_fee', name: 'Application Fee Payment', required: true, status: 'Not Started' },
+        { id: 'req_final_sub', name: 'Final Application Submission', required: true, status: 'Not Started' }
+      ]
+    },
+    {
+      id: 'app_seed_4',
+      university: 'Georgia Institute of Technology',
+      program: 'MS Computer Science',
+      degree: 'MS',
+      country: 'USA',
+      priority: 'High',
+      status: 'Application Started',
+      deadline: '2027-02-01',
+      rawDeadlineText: 'Feb 1, 2027',
+      openingDate: '2026-09-01',
+      deadlineType: 'Regular Round',
+      verificationStatus: 'Verified',
+      officialSourceUrl: 'https://www.cc.gatech.edu/ms-cs-admissions',
+      portalUrl: 'https://grad.gatech.edu/apply',
+      greRequirement: 'Optional',
+      englishRequirement: 'TOEFL 100+ / IELTS 7.5',
+      appFee: 85,
+      notes: 'Strong machine learning and systems specialization.',
+      checklist: [
+        { id: 'req_resume', name: 'Resume / CV', required: true, status: 'Completed' },
+        { id: 'req_sop', name: 'Statement of Purpose (SOP)', required: true, status: 'In Progress' },
+        { id: 'req_lor1', name: 'Letter of Recommendation (LOR 1)', required: true, status: 'Completed' },
+        { id: 'req_lor2', name: 'Letter of Recommendation (LOR 2)', required: true, status: 'Completed' },
+        { id: 'req_lor3', name: 'Letter of Recommendation (LOR 3)', required: true, status: 'Completed' },
+        { id: 'req_transcripts', name: 'Official / Unofficial Transcripts', required: true, status: 'Completed' },
+        { id: 'req_gre', name: 'GRE General Score', required: false, status: 'Not Started' },
+        { id: 'req_english', name: 'TOEFL / IELTS Score Report', required: true, status: 'Completed' },
+        { id: 'req_app_form', name: 'Online Application Form', required: true, status: 'In Progress' },
+        { id: 'req_app_fee', name: 'Application Fee Payment', required: true, status: 'Not Started' },
+        { id: 'req_final_sub', name: 'Final Application Submission', required: true, status: 'Not Started' }
+      ]
+    },
+    {
+      id: 'app_seed_5',
+      university: 'University of Texas at Austin',
+      program: 'MS Computer Science',
+      degree: 'MS',
+      country: 'USA',
+      priority: 'High',
+      status: 'Not Started',
+      deadline: '2026-12-15',
+      rawDeadlineText: 'Dec 15, 2026',
+      openingDate: '2026-09-01',
+      deadlineType: 'Regular Round',
+      verificationStatus: 'Verified',
+      officialSourceUrl: 'https://www.cs.utexas.edu/graduate-program/admissions',
+      portalUrl: 'https://gradschool.utexas.edu/admissions/apply',
+      greRequirement: 'Required',
+      englishRequirement: 'TOEFL 79+ / IELTS 6.5',
+      appFee: 90,
+      notes: 'Requires official GRE score report submission via ETS (Institution Code 6882).',
+      checklist: [
+        { id: 'req_resume', name: 'Resume / CV', required: true, status: 'Completed' },
+        { id: 'req_sop', name: 'Statement of Purpose (SOP)', required: true, status: 'Not Started' },
+        { id: 'req_lor1', name: 'Letter of Recommendation (LOR 1)', required: true, status: 'Not Started' },
+        { id: 'req_lor2', name: 'Letter of Recommendation (LOR 2)', required: true, status: 'Not Started' },
+        { id: 'req_lor3', name: 'Letter of Recommendation (LOR 3)', required: true, status: 'Not Started' },
+        { id: 'req_transcripts', name: 'Official / Unofficial Transcripts', required: true, status: 'Not Started' },
+        { id: 'req_gre', name: 'GRE General Score', required: true, status: 'In Progress' },
+        { id: 'req_english', name: 'TOEFL / IELTS Score Report', required: true, status: 'Completed' },
+        { id: 'req_app_form', name: 'Online Application Form', required: true, status: 'Not Started' },
+        { id: 'req_app_fee', name: 'Application Fee Payment', required: true, status: 'Not Started' },
+        { id: 'req_final_sub', name: 'Final Application Submission', required: true, status: 'Not Started' }
+      ]
+    },
+    {
+      id: 'app_seed_6',
+      university: 'University of California, San Diego',
+      program: 'MS Computer Science',
+      degree: 'MS',
+      country: 'USA',
+      priority: 'High',
+      status: 'Ready to Apply',
+      deadline: '2026-12-20',
+      rawDeadlineText: 'Dec 20, 2026',
+      openingDate: '2026-09-01',
+      deadlineType: 'Priority Round',
+      verificationStatus: 'Verified',
+      officialSourceUrl: 'https://cse.ucsd.edu/graduate/admissions',
+      portalUrl: 'https://grad.ucsd.edu/admissions/apply',
+      greRequirement: 'Not Required',
+      englishRequirement: 'TOEFL 85+ / IELTS 7.0',
+      appFee: 155,
+      notes: 'GRE waived for all CSE graduate applicants. All LORs and SOP ready!',
+      checklist: [
+        { id: 'req_resume', name: 'Resume / CV', required: true, status: 'Completed' },
+        { id: 'req_sop', name: 'Statement of Purpose (SOP)', required: true, status: 'Completed' },
+        { id: 'req_lor1', name: 'Letter of Recommendation (LOR 1)', required: true, status: 'Completed' },
+        { id: 'req_lor2', name: 'Letter of Recommendation (LOR 2)', required: true, status: 'Completed' },
+        { id: 'req_lor3', name: 'Letter of Recommendation (LOR 3)', required: true, status: 'Completed' },
+        { id: 'req_transcripts', name: 'Official / Unofficial Transcripts', required: true, status: 'Completed' },
+        { id: 'req_gre', name: 'GRE General Score', required: false, status: 'Not Started' },
+        { id: 'req_english', name: 'TOEFL / IELTS Score Report', required: true, status: 'Completed' },
+        { id: 'req_app_form', name: 'Online Application Form', required: true, status: 'Completed' },
+        { id: 'req_app_fee', name: 'Application Fee Payment', required: true, status: 'In Progress' },
+        { id: 'req_final_sub', name: 'Final Application Submission', required: true, status: 'Not Started' }
+      ]
+    },
+    {
+      id: 'app_seed_7',
+      university: 'Northeastern University',
+      program: 'MS Computer Science',
+      degree: 'MS',
+      country: 'USA',
+      priority: 'Low',
+      status: 'Submitted',
+      deadline: '2027-04-15',
+      rawDeadlineText: 'Apr 15, 2027',
+      openingDate: '2026-09-01',
+      deadlineType: 'Rolling Admissions',
+      verificationStatus: 'Verified',
+      officialSourceUrl: 'https://khoury.northeastern.edu/academics/graduate-programs/',
+      portalUrl: 'https://khoury.northeastern.edu/admissions/',
+      greRequirement: 'Not Required',
+      englishRequirement: 'TOEFL 100+ / IELTS 7.5',
+      appFee: 75,
+      notes: 'Application submitted early round. Includes optional Co-op internship track.',
+      checklist: [
+        { id: 'req_resume', name: 'Resume / CV', required: true, status: 'Completed' },
+        { id: 'req_sop', name: 'Statement of Purpose (SOP)', required: true, status: 'Completed' },
+        { id: 'req_lor1', name: 'Letter of Recommendation (LOR 1)', required: true, status: 'Completed' },
+        { id: 'req_lor2', name: 'Letter of Recommendation (LOR 2)', required: true, status: 'Completed' },
+        { id: 'req_lor3', name: 'Letter of Recommendation (LOR 3)', required: true, status: 'Completed' },
+        { id: 'req_transcripts', name: 'Official / Unofficial Transcripts', required: true, status: 'Completed' },
+        { id: 'req_gre', name: 'GRE General Score', required: false, status: 'Completed' },
+        { id: 'req_english', name: 'TOEFL / IELTS Score Report', required: true, status: 'Completed' },
+        { id: 'req_app_form', name: 'Online Application Form', required: true, status: 'Completed' },
+        { id: 'req_app_fee', name: 'Application Fee Payment', required: true, status: 'Completed' },
+        { id: 'req_final_sub', name: 'Final Application Submission', required: true, status: 'Completed' }
+      ]
+    }
+  ];
+
   // --- DATA LOADING & PERSISTENCE ---
   function loadDataFromStorage() {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        state.applications = JSON.parse(saved);
-        return true;
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          state.applications = parsed;
+          return true;
+        }
       }
     } catch (err) {
       console.error('Failed to load from storage:', err);
     }
+
+    // Default Fallback Initial Data if storage is empty
+    state.applications = JSON.parse(JSON.stringify(SEED_APPLICATIONS));
+    saveDataToStorage();
     return false;
   }
 
@@ -745,7 +987,53 @@
     renderMetrics();
     renderSmartWarnings();
     renderTimeline();
+    renderMissingDocsSection();
     renderApplications();
+  }
+
+  // Render Missing Documents Section (Prompt Section 6)
+  function renderMissingDocsSection() {
+    const section = document.getElementById('missing-docs-section');
+    const container = document.getElementById('missing-docs-container');
+    const countEl = document.getElementById('missing-docs-count');
+    if (!section || !container) return;
+
+    // Filter apps with incomplete required checklist items
+    const incompleteApps = state.applications.filter(app => {
+      if (app.status === 'Submitted' || app.status === 'Decision Received') return false;
+      const incompleteItems = app.checklist.filter(item => item.status !== 'Completed' && item.required !== false);
+      return incompleteItems.length > 0;
+    });
+
+    if (incompleteApps.length === 0) {
+      section.style.display = 'none';
+      return;
+    }
+
+    section.style.display = 'block';
+    if (countEl) countEl.textContent = `${incompleteApps.length} Application${incompleteApps.length > 1 ? 's' : ''} Need Attention`;
+
+    container.innerHTML = incompleteApps.slice(0, 6).map(app => {
+      const missingItems = app.checklist
+        .filter(item => item.status !== 'Completed' && item.required !== false)
+        .slice(0, 4);
+      
+      const pct = calculateCompletion(app);
+
+      return `
+        <div class="missing-doc-item" onclick="window.openDetailDrawer('${app.id}')">
+          <div class="missing-doc-info">
+            <div class="missing-doc-univ">${app.university}</div>
+            <div class="missing-doc-program">${app.program} • <strong>${pct}% Done</strong></div>
+            <div class="missing-doc-tags">
+              ${missingItems.map(item => `<span class="missing-tag">${item.name.replace(/\([^)]*\)/g, '').trim()}</span>`).join('')}
+              ${app.checklist.filter(i => i.status !== 'Completed' && i.required !== false).length > 4 ? '<span class="missing-tag">+more</span>' : ''}
+            </div>
+          </div>
+          <button class="btn btn-secondary btn-sm" style="flex-shrink: 0;">Open -></button>
+        </div>
+      `;
+    }).join('');
   }
 
   // Render Top Metrics
@@ -1240,9 +1528,13 @@
       icsContent += `SUMMARY:🎓 Deadline: ${app.university} (${app.program})\r\n`;
       icsContent += `DESCRIPTION:Graduate application deadline for ${app.university} - ${app.program}. Portal: ${app.portalUrl || 'N/A'}\r\n`;
 
-      // Pre-configured Alarms (30d, 14d, 7d, 1d)
-      icsContent += `BEGIN:VALARM\r\nTRIGGER:-P14D\r\nACTION:DISPLAY\r\nDESCRIPTION:Application deadline in 14 days for ${app.university}\r\nEND:VALARM\r\n`;
-      icsContent += `BEGIN:VALARM\r\nTRIGGER:-P3D\r\nACTION:DISPLAY\r\nDESCRIPTION:URGENT: Application deadline in 3 days for ${app.university}\r\nEND:VALARM\r\n`;
+      // 6 Standard Milestone Alarms (30d, 14d, 7d, 3d, 1d, 0d) (Prompt Section 7)
+      icsContent += `BEGIN:VALARM\r\nTRIGGER:-P30D\r\nACTION:DISPLAY\r\nDESCRIPTION:📅 30 Days Remaining: Application deadline for ${app.university} (${app.program})\r\nEND:VALARM\r\n`;
+      icsContent += `BEGIN:VALARM\r\nTRIGGER:-P14D\r\nACTION:DISPLAY\r\nDESCRIPTION:⚠️ 14 Days Remaining: Application deadline approaching for ${app.university}\r\nEND:VALARM\r\n`;
+      icsContent += `BEGIN:VALARM\r\nTRIGGER:-P7D\r\nACTION:DISPLAY\r\nDESCRIPTION:🚨 7 Days Remaining: URGENT deadline for ${app.university}\r\nEND:VALARM\r\n`;
+      icsContent += `BEGIN:VALARM\r\nTRIGGER:-P3D\r\nACTION:DISPLAY\r\nDESCRIPTION:🔥 3 Days Remaining: Final document check for ${app.university}\r\nEND:VALARM\r\n`;
+      icsContent += `BEGIN:VALARM\r\nTRIGGER:-P1D\r\nACTION:DISPLAY\r\nDESCRIPTION:‼️ 1 Day Remaining: Deadline TOMORROW for ${app.university}\r\nEND:VALARM\r\n`;
+      icsContent += `BEGIN:VALARM\r\nTRIGGER:-PT0H\r\nACTION:DISPLAY\r\nDESCRIPTION:⏰ DUE TODAY: Application deadline for ${app.university}\r\nEND:VALARM\r\n`;
 
       icsContent += `END:VEVENT\r\n`;
     });
