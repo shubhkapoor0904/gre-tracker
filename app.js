@@ -61,15 +61,11 @@
     loadSentMilestones();
     initEmailJsSDK();
     
-    // Attempt auto-loading Colleges.xlsx as primary source of truth
-    const loadedFromStorage = loadDataFromStorage();
-    if (!loadedFromStorage) {
-      autoTryLoadCollegesExcel();
-    } else {
-      renderApp();
-      checkWeeklyDigestTrigger();
-    }
-
+    loadDataFromStorage();
+    autoTryLoadCollegesExcel();
+    
+    renderApp();
+    checkWeeklyDigestTrigger();
     setupEventListeners();
   }
 
@@ -642,6 +638,105 @@
     openEmailPreviewModal(recipient, rawSubject, rawBody, `📧 Email Alert: ${app.university}`);
   }
 
+  window.saveProfileSettings = function () {
+    const nameEl = document.getElementById('profile-name');
+    const emailEl = document.getElementById('profile-email');
+    const nameVal = nameEl ? nameEl.value.trim() : '';
+    const emailVal = emailEl ? emailEl.value.trim() : '';
+
+    if (emailVal) {
+      state.userProfile.name = nameVal || 'Applicant';
+      state.userProfile.email = emailVal;
+      saveDataToStorage();
+      const dispName = document.getElementById('user-display-name');
+      const dispEmail = document.getElementById('user-display-email');
+      if (dispName) dispName.textContent = state.userProfile.name;
+      if (dispEmail) dispEmail.textContent = state.userProfile.email;
+      alert('Profile saved successfully!');
+    } else {
+      alert('Please enter a valid email address.');
+    }
+  };
+
+  window.saveEmailJsCredentials = function () {
+    const sEl = document.getElementById('emailjs-service-id');
+    const tEl = document.getElementById('emailjs-template-id');
+    const kEl = document.getElementById('emailjs-public-key');
+
+    if (sEl) state.userProfile.emailJsService = sEl.value.trim();
+    if (tEl) state.userProfile.emailJsTemplate = tEl.value.trim();
+    if (kEl) state.userProfile.emailJsKey = kEl.value.trim();
+    saveDataToStorage();
+    alert('EmailJS settings saved!');
+  };
+
+  window.openGmailWeb = function () {
+    if (!currentPreviewEmail.recipient) return;
+    const su = encodeURIComponent(currentPreviewEmail.subject);
+    const body = encodeURIComponent(currentPreviewEmail.body);
+    const to = encodeURIComponent(currentPreviewEmail.recipient);
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${su}&body=${body}`;
+    window.open(gmailUrl, '_blank');
+  };
+
+  window.copyEmailText = function () {
+    const fullText = `Subject: ${currentPreviewEmail.subject}\n\n${currentPreviewEmail.body}`;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(fullText).then(() => {
+        alert('📋 Email digest copied to clipboard!');
+      }).catch(() => copyTextFallback());
+    } else {
+      copyTextFallback();
+    }
+  };
+
+  function copyTextFallback() {
+    const copyBox = document.getElementById('preview-email-body');
+    if (copyBox) {
+      copyBox.select();
+      document.execCommand('copy');
+      alert('📋 Email digest copied to clipboard!');
+    }
+  }
+
+  window.openDesktopMail = function () {
+    if (!currentPreviewEmail.recipient) return;
+    const su = encodeURIComponent(currentPreviewEmail.subject);
+    const body = encodeURIComponent(currentPreviewEmail.body);
+    window.location.href = `mailto:${currentPreviewEmail.recipient}?subject=${su}&body=${body}`;
+  };
+
+  window.switchView = function (viewMode) {
+    state.currentView = viewMode;
+    const gridBtn = document.getElementById('view-tab-grid');
+    const tableBtn = document.getElementById('view-tab-table');
+    if (viewMode === 'grid') {
+      if (gridBtn) gridBtn.classList.add('active');
+      if (tableBtn) tableBtn.classList.remove('active');
+    } else {
+      if (tableBtn) tableBtn.classList.add('active');
+      if (gridBtn) gridBtn.classList.remove('active');
+    }
+    renderApplications();
+  };
+
+  window.updateFilter = function (filterType, value) {
+    if (filterType === 'status') state.filterStatus = value;
+    if (filterType === 'urgency') state.filterUrgency = value;
+    if (filterType === 'priority') state.filterPriority = value;
+    if (filterType === 'gre') state.filterGRE = value;
+    renderApplications();
+  };
+
+  window.updateSort = function (value) {
+    state.sortBy = value;
+    renderApplications();
+  };
+
+  window.updateSearch = function (value) {
+    state.searchQuery = value;
+    renderApplications();
+  };
 
 
   // --- RENDER LOGIC ---
