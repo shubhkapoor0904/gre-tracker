@@ -512,33 +512,41 @@
 
         <!-- Free EmailJS Service Credentials Card -->
         <div style="background: var(--bg-card-solid); padding: 18px; border-radius: var(--radius-md); border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 14px;">
-          <h4 style="color: var(--accent-purple); font-family: var(--font-heading); font-size: 1.05rem; font-weight: 700;">
-            2. EmailJS Free Tier Credentials (Optional Custom Key)
-          </h4>
-          <p style="font-size: 0.85rem; color: var(--text-muted);">
-            Pre-configured with TargetMS Free Email Engine. Enter your own free EmailJS Public Key if you prefer your custom domain sender:
-          </p>
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <h4 style="color: var(--accent-purple); font-family: var(--font-heading); font-size: 1.05rem; font-weight: 700;">
+              2. Free Background Email Automation Engine (EmailJS)
+            </h4>
+            <span class="badge badge-safe">100% Free • No Credit Card</span>
+          </div>
+
+          <div style="background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.3); padding: 12px 14px; border-radius: var(--radius-md); font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;">
+            <strong style="color: #fff;">How 100% Automated Background Emailing Works:</strong><br>
+            Browsers cannot send emails out silently without an API. To get weekly digests delivered <strong>100% automatically to your inbox without touching any buttons or opening mail apps</strong>:<br>
+            1. Sign up for free at <a href="https://www.emailjs.com" target="_blank" style="color: var(--primary); text-decoration: underline;">EmailJS.com</a> (200 free emails/mo).<br>
+            2. Connect your Gmail account and copy your <strong>Public Key</strong>.<br>
+            3. Paste your Public Key below and click <strong>Save Credentials</strong>. Emails will now fire silently in the background!
+          </div>
 
           <div class="form-grid">
             <div class="form-group">
               <label for="emailjs-service-id" class="form-label">EmailJS Service ID</label>
-              <input type="text" id="emailjs-service-id" class="form-control" value="service_targetms">
+              <input type="text" id="emailjs-service-id" class="form-control" value="service_targetms" placeholder="service_xxxx">
             </div>
 
             <div class="form-group">
               <label for="emailjs-template-id" class="form-label">EmailJS Template ID</label>
-              <input type="text" id="emailjs-template-id" class="form-control" value="template_deadline">
+              <input type="text" id="emailjs-template-id" class="form-control" value="template_deadline" placeholder="template_xxxx">
             </div>
 
             <div class="form-group full-width">
-              <label for="emailjs-public-key" class="form-label">EmailJS Public Key</label>
-              <input type="text" id="emailjs-public-key" class="form-control" value="user_targetms_free_key">
+              <label for="emailjs-public-key" class="form-label">EmailJS Public Key (Required for Silent Sending)</label>
+              <input type="text" id="emailjs-public-key" class="form-control" value="user_targetms_free_key" placeholder="e.g. user_abc123xyz">
             </div>
           </div>
 
           <div style="display: flex; gap: 12px; flex-wrap: wrap;">
             <button id="btn-save-emailjs" class="btn btn-secondary btn-sm" onclick="window.saveEmailJsCredentials()">Save Email Credentials</button>
-            <button id="btn-send-test-email" class="btn btn-accent btn-sm" onclick="window.sendWeeklyTop7Digest(true)">🚀 Send Test Email Now</button>
+            <button id="btn-send-test-email" class="btn btn-accent btn-sm" onclick="window.sendWeeklyTop7Digest(true)">🚀 Send Test Digest Now</button>
           </div>
         </div>
 
@@ -657,7 +665,7 @@
           <p style="font-size: 0.88rem; color: var(--text-muted);">
             Export all application deadlines as a single `.ics` file. Double-click or import into Google Calendar, Apple iCal, or Outlook. Includes built-in alert triggers (30d, 14d, 7d, 1d before).
           </p>
-          <button id="btn-download-all-ics" class="btn btn-primary btn-sm" style="align-self: flex-start;">
+          <button id="btn-download-all-ics" class="btn btn-primary btn-sm" style="align-self: flex-start;" onclick="window.downloadAllIcs()">
             📥 Download All Deadlines `.ics` File
           </button>
         </div>
