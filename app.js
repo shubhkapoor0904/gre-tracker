@@ -6,7 +6,7 @@
   'use strict';
 
   // --- STORAGE KEYS & INITIAL STATE ---
-  const STORAGE_KEY = 'targetms_applications_v4'; // Bumped key to re-parse Excel with exact date rules
+  const STORAGE_KEY = 'targetms_applications_v5'; // Bumped key to re-parse Excel with future intake year rule
   const PROFILE_STORAGE_KEY = 'targetms_user_profile_v1';
   const SENT_MILESTONES_KEY = 'targetms_sent_milestones_v1';
 
@@ -226,7 +226,7 @@
       const feeVal = idxFee !== -1 && row[idxFee] ? parseFloat(row[idxFee]) || 75 : 75;
       const notesVal = idxNotes !== -1 && row[idxNotes] ? String(row[idxNotes]).trim() : '';
 
-      // Parse Date: Extract first date if range, or mark Needs Verification if missing/unclear
+      // Parse Date: Extract first date from range & ensure ALL dates are for the FUTURE (advance overdue months without year to next year!)
       const dateResult = parseExcelDate(rawDeadline);
       const deadlineStr = dateResult.dateStr;
       const verificationStatus = dateResult.verified ? 'Verified' : 'Needs Verification';
@@ -279,16 +279,27 @@
     }
   }
 
-  // Exact Date Parsing Engine: Extract first date from range or mark unverified (NO invented dates!)
+  // Exact Date Parsing Engine: Ensures ALL dates are for the FUTURE (no accidental overdue dates!)
   function parseExcelDate(raw) {
     if (!raw) return { dateStr: '', rawText: '', verified: false };
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const currentYear = today.getFullYear();
+
     // 1. Handle Excel numeric serial dates
     if (typeof raw === 'number') {
-      const date = new Date((raw - (25567 + 2)) * 86400 * 1000);
+      let date = new Date((raw - (25567 + 2)) * 86400 * 1000);
       if (!isNaN(date.getTime())) {
-        let y = date.getFullYear();
-        if (y < 2020) y = 2026;
+        date.setHours(0, 0, 0, 0);
+        // If Excel date integer resolves to past, advance year to future intake!
+        if (date < today) {
+          date.setFullYear(currentYear + (date.getMonth() < today.getMonth() ? 1 : 0));
+        }
+        if (date < today) {
+          date.setFullYear(date.getFullYear() + 1);
+        }
+        const y = date.getFullYear();
         const m = String(date.getMonth() + 1).padStart(2, '0');
         const d = String(date.getDate()).padStart(2, '0');
         return { dateStr: `${y}-${m}-${d}`, rawText: `${y}-${m}-${d}`, verified: true };
@@ -306,8 +317,15 @@
     // 3. Try parsing direct standard JS date string
     const parsedDirect = new Date(firstSegment);
     if (!isNaN(parsedDirect.getTime()) && parsedDirect.getFullYear() > 2000) {
+      parsedDirect.setHours(0, 0, 0, 0);
       let year = parsedDirect.getFullYear();
-      if (year < 2020) year = 2026;
+      
+      // RULE: If date would fall in past, advance to next year!
+      if (parsedDirect < today) {
+        year = currentYear + 1;
+        parsedDirect.setFullYear(year);
+      }
+
       const month = String(parsedDirect.getMonth() + 1).padStart(2, '0');
       const day = String(parsedDirect.getDate()).padStart(2, '0');
       return { dateStr: `${year}-${month}-${day}`, rawText: str, verified: true };
@@ -342,11 +360,18 @@
       const m = monthMap[monthStr.toLowerCase().substring(0, 3)];
       const d = parseInt(dayStr, 10);
       
-      const currentYear = new Date().getFullYear();
       let y = yearStr ? parseInt(yearStr, 10) : currentYear;
-      if (!yearStr && m < 5) y = currentYear + 1; // Jan-May falls in next year
 
-      const dateObj = new Date(y, m, d);
+      // Create candidate date object
+      let dateObj = new Date(y, m, d);
+      dateObj.setHours(0, 0, 0, 0);
+
+      // RULE: If candidate date is before today AND year was not explicitly specified, advance to NEXT YEAR!
+      if (dateObj < today && !yearStr) {
+        y = currentYear + 1;
+        dateObj = new Date(y, m, d);
+      }
+
       if (!isNaN(dateObj.getTime())) {
         const monthPad = String(m + 1).padStart(2, '0');
         const dayPad = String(d).padStart(2, '0');
