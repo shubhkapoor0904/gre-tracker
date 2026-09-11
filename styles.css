@@ -1,10 +1,23 @@
 /* ==========================================================================
-   GradTrack / TargetMS — Playful Pink & White Modern SaaS Design System
+   TargetMS — Playful Pink & White Modern SaaS Design System
+   Typography System: Uber Base / Uber Move Typography Architecture
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,600&family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
+  /* Uber Base Typography Tokens */
+  --font-heading: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-body: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+
+  /* Uber Letter Spacing Scales */
+  --tracking-display: -0.035em;
+  --tracking-tight: -0.025em;
+  --tracking-snug: -0.012em;
+  --tracking-normal: 0em;
+  --tracking-caps: 0.08em;
+
   /* Color Tokens - Playful Pink & White Theme */
   --bg-dark: #fff0f5;             /* Soft pastel rose body background */
   --bg-card: #ffffff;             /* Crisp white porcelain card background */
@@ -37,14 +50,10 @@
   --gold-glow: rgba(245, 158, 11, 0.25);
   --gold-border: rgba(245, 158, 11, 0.5);
 
-  /* Typography */
-  --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-
-  /* High Contrast Deep Berry Text Colors for White & Soft Pink Backgrounds */
-  --text-main: #2b1427;           /* Deep dark berry / plum - sharp & crystal clear */
-  --text-muted: #70556d;          /* Soft plum rose slate */
-  --text-dim: #9b7a97;            /* Muted rose gray */
+  /* High Contrast Uber Jet Black & Dark Plum Text Colors */
+  --text-main: #121212;           /* Sharp Uber Jet Black text */
+  --text-muted: #524250;          /* Deep plum slate neutral */
+  --text-dim: #7d657a;            /* Muted rose neutral */
 
   /* Transitions & Shadows */
   --transition-fast: 0.15s ease;
@@ -55,6 +64,7 @@
   --radius-lg: 20px;
   --radius-md: 12px;
   --radius-sm: 8px;
+  --radius-pill: 9999px;
 }
 
 /* Reset & Base Setup */
@@ -72,7 +82,10 @@ html, body {
   font-family: var(--font-body);
   font-size: 14px;
   line-height: 1.5;
+  letter-spacing: var(--tracking-snug);
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   background-image: 
     radial-gradient(circle at 10% 10%, #ffd0e0 0%, transparent 45%),
     radial-gradient(circle at 90% 85%, #fce7f3 0%, transparent 45%),
@@ -108,13 +121,13 @@ html, body {
   gap: 24px;
 }
 
-/* Header Component */
+/* Header Component (Uber Layout) */
 .app-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 18px 26px;
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1.5px solid var(--border-color);
@@ -154,18 +167,21 @@ html, body {
 
 .brand-titles h1 {
   font-family: var(--font-heading);
-  font-size: 1.45rem;
+  font-size: 1.5rem;
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--tracking-display);
+  line-height: 1.1;
   background: linear-gradient(135deg, #ff4b82 0%, #db2777 60%, #9333ea 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .brand-titles p {
+  font-family: var(--font-body);
   font-size: 0.82rem;
   color: var(--text-muted);
   font-weight: 500;
+  letter-spacing: var(--tracking-snug);
 }
 
 .header-actions {
@@ -175,7 +191,7 @@ html, body {
   flex-wrap: wrap;
 }
 
-/* User Profile / Auth Pill Component */
+/* User Profile / Auth Pill Component (Uber Pill) */
 .user-pill {
   display: flex;
   align-items: center;
@@ -183,7 +199,7 @@ html, body {
   padding: 6px 16px;
   background: #fff0f5;
   border: 1.5px solid #fbcfe8;
-  border-radius: 30px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
   transition: all var(--transition-normal);
 }
@@ -203,6 +219,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  font-family: var(--font-heading);
   font-weight: 800;
   font-size: 0.82rem;
   color: #ffffff;
@@ -212,30 +229,34 @@ html, body {
 .user-info {
   display: flex;
   flex-direction: column;
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
 .user-name {
-  font-weight: 700;
+  font-family: var(--font-heading);
+  font-weight: 800;
   font-size: 0.84rem;
   color: var(--text-main);
+  letter-spacing: var(--tracking-snug);
 }
 
 .user-email {
   font-size: 0.74rem;
   color: var(--text-muted);
+  font-weight: 500;
 }
 
-/* Button System */
+/* Button System (Uber Base Controls) */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   padding: 10px 18px;
-  font-family: var(--font-body);
+  font-family: var(--font-heading);
   font-size: 0.88rem;
   font-weight: 700;
+  letter-spacing: var(--tracking-snug);
   border-radius: var(--radius-md);
   border: 1.5px solid transparent;
   cursor: pointer;
@@ -304,7 +325,7 @@ html, body {
   border-radius: var(--radius-md);
 }
 
-/* Dashboard Summary Cards */
+/* Dashboard Summary Cards (Uber Typography Hierarchy) */
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -347,11 +368,12 @@ html, body {
 .metric-card.metric-high::before { background: #d97706; }
 
 .metric-label {
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-family: var(--font-heading);
+  font-size: 0.72rem;
+  font-weight: 800;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--tracking-caps);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -359,8 +381,9 @@ html, body {
 
 .metric-value {
   font-family: var(--font-heading);
-  font-size: 2.3rem;
+  font-size: 2.5rem;
   font-weight: 800;
+  letter-spacing: var(--tracking-display);
   color: var(--text-main);
   line-height: 1;
 }
@@ -369,6 +392,7 @@ html, body {
   font-size: 0.76rem;
   color: var(--text-dim);
   font-weight: 500;
+  letter-spacing: var(--tracking-snug);
 }
 
 /* Smart Warnings Banner */
@@ -410,7 +434,9 @@ html, body {
 }
 
 .warning-title {
+  font-family: var(--font-heading);
   font-weight: 800;
+  letter-spacing: var(--tracking-snug);
   margin-bottom: 2px;
 }
 
@@ -449,6 +475,8 @@ html, body {
   color: var(--text-main);
   font-family: var(--font-body);
   font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: var(--tracking-snug);
   transition: all var(--transition-fast);
 }
 
@@ -481,9 +509,10 @@ html, body {
   border: 1.5px solid var(--border-color);
   border-radius: var(--radius-md);
   color: var(--text-main);
-  font-family: var(--font-body);
+  font-family: var(--font-heading);
   font-size: 0.88rem;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: var(--tracking-snug);
   cursor: pointer;
   outline: none;
   transition: all var(--transition-fast);
@@ -510,8 +539,10 @@ html, body {
   border: none;
   background: transparent;
   color: var(--text-muted);
-  font-weight: 700;
+  font-family: var(--font-heading);
+  font-weight: 800;
   font-size: 0.85rem;
+  letter-spacing: var(--tracking-snug);
   cursor: pointer;
   transition: all var(--transition-fast);
 }
@@ -522,7 +553,7 @@ html, body {
   box-shadow: 0 4px 12px var(--primary-glow);
 }
 
-/* Section Titles */
+/* Section Titles (Uber Base Typography) */
 .section-header {
   display: flex;
   align-items: center;
@@ -534,6 +565,7 @@ html, body {
   font-family: var(--font-heading);
   font-size: 1.25rem;
   font-weight: 800;
+  letter-spacing: var(--tracking-tight);
   color: var(--text-main);
   display: flex;
   align-items: center;
@@ -541,12 +573,14 @@ html, body {
 }
 
 .section-count {
-  font-size: 0.8rem;
-  padding: 3px 10px;
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: var(--tracking-snug);
+  padding: 4px 12px;
   background: #fce7f3;
-  border-radius: 14px;
+  border-radius: var(--radius-pill);
   color: #be185d;
-  font-weight: 700;
 }
 
 /* Timeline Widget (Upcoming Deadlines) */
@@ -587,8 +621,10 @@ html, body {
 }
 
 .timeline-univ {
+  font-family: var(--font-heading);
   font-weight: 800;
   font-size: 0.98rem;
+  letter-spacing: var(--tracking-tight);
   color: var(--text-main);
   white-space: nowrap;
   overflow: hidden;
@@ -598,6 +634,7 @@ html, body {
 .timeline-prog {
   font-size: 0.82rem;
   color: var(--text-muted);
+  font-weight: 500;
 }
 
 .timeline-footer {
@@ -607,16 +644,17 @@ html, body {
   margin-top: 4px;
 }
 
-/* Badges System */
+/* Badges System (Uber Base Pill System) */
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 11px;
-  border-radius: 20px;
-  font-size: 0.74rem;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-heading);
+  font-size: 0.72rem;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
 }
 
@@ -693,6 +731,7 @@ html, body {
   font-family: var(--font-heading);
   font-weight: 800;
   font-size: 1.15rem;
+  letter-spacing: var(--tracking-tight);
   color: var(--primary);
   flex-shrink: 0;
   box-shadow: 0 4px 10px rgba(244, 114, 182, 0.2);
@@ -700,8 +739,9 @@ html, body {
 
 .univ-name {
   font-family: var(--font-heading);
-  font-size: 1.12rem;
+  font-size: 1.15rem;
   font-weight: 800;
+  letter-spacing: var(--tracking-tight);
   color: var(--text-main);
   line-height: 1.25;
 }
@@ -710,10 +750,11 @@ html, body {
   font-size: 0.86rem;
   color: var(--text-muted);
   font-weight: 500;
+  letter-spacing: var(--tracking-snug);
   margin-top: 2px;
 }
 
-/* Card Body & Details */
+/* Card Body & Details (Uber Specs) */
 .card-details-row {
   display: flex;
   align-items: center;
@@ -730,16 +771,19 @@ html, body {
 }
 
 .detail-label {
-  font-size: 0.72rem;
+  font-family: var(--font-heading);
+  font-size: 0.68rem;
   color: var(--text-dim);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 700;
+  letter-spacing: var(--tracking-caps);
+  font-weight: 800;
 }
 
 .detail-val {
-  font-size: 0.9rem;
-  font-weight: 700;
+  font-family: var(--font-heading);
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: var(--tracking-snug);
   color: var(--text-main);
 }
 
@@ -762,6 +806,7 @@ html, body {
 }
 
 .progress-pct {
+  font-family: var(--font-heading);
   font-weight: 800;
   color: var(--text-main);
 }
@@ -830,7 +875,7 @@ html, body {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(43, 20, 39, 0.45);
+  background: rgba(18, 18, 18, 0.5);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   z-index: 1000;
@@ -857,7 +902,7 @@ html, body {
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 25px 70px rgba(43, 20, 39, 0.25);
+  box-shadow: 0 25px 70px rgba(18, 18, 18, 0.25);
   transform: scale(0.92);
   transition: transform var(--transition-normal);
   overflow: hidden;
@@ -880,6 +925,7 @@ html, body {
   font-family: var(--font-heading);
   font-size: 1.35rem;
   font-weight: 800;
+  letter-spacing: var(--tracking-tight);
   color: var(--text-main);
 }
 
@@ -920,8 +966,10 @@ html, body {
 }
 
 .form-label {
-  font-size: 0.85rem;
-  font-weight: 700;
+  font-family: var(--font-heading);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: var(--tracking-snug);
   color: var(--text-muted);
 }
 
@@ -933,6 +981,7 @@ html, body {
   color: var(--text-main);
   font-family: var(--font-body);
   font-size: 0.9rem;
+  font-weight: 500;
   outline: none;
   transition: all var(--transition-fast);
 }
@@ -955,7 +1004,7 @@ textarea.form-control {
   right: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(43, 20, 39, 0.45);
+  background: rgba(18, 18, 18, 0.5);
   backdrop-filter: blur(8px);
   z-index: 1100;
   opacity: 0;
@@ -977,7 +1026,7 @@ textarea.form-control {
   height: 100%;
   background: #ffffff;
   border-left: 1.5px solid var(--border-color);
-  box-shadow: -15px 0 50px rgba(43, 20, 39, 0.2);
+  box-shadow: -15px 0 50px rgba(18, 18, 18, 0.2);
   display: flex;
   flex-direction: column;
   transform: translateX(100%);
@@ -1055,7 +1104,9 @@ textarea.form-control {
 }
 
 .checklist-name {
+  font-family: var(--font-heading);
   font-weight: 700;
+  letter-spacing: var(--tracking-snug);
   color: var(--text-main);
 }
 
@@ -1064,7 +1115,7 @@ textarea.form-control {
   color: var(--text-dim);
 }
 
-/* Animations & Keyframes */
+/* Keyframes */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
@@ -1076,7 +1127,7 @@ textarea.form-control {
   100% { opacity: 1; }
 }
 
-/* Table View Component */
+/* Table View Component (Uber Base Table) */
 .table-container {
   width: 100%;
   overflow-x: auto;
@@ -1097,10 +1148,11 @@ textarea.form-control {
   padding: 14px 18px;
   background: #fff0f5;
   color: var(--text-muted);
-  font-weight: 700;
-  font-size: 0.8rem;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--tracking-caps);
   border-bottom: 1.5px solid var(--border-color);
 }
 
@@ -1108,6 +1160,7 @@ textarea.form-control {
   padding: 14px 18px;
   border-bottom: 1px solid var(--border-color);
   color: var(--text-main);
+  font-weight: 500;
   vertical-align: middle;
 }
 
@@ -1147,6 +1200,7 @@ textarea.form-control {
   font-family: var(--font-heading);
   font-size: 1.3rem;
   font-weight: 800;
+  letter-spacing: var(--tracking-tight);
   color: var(--text-main);
 }
 
@@ -1154,6 +1208,82 @@ textarea.form-control {
   font-size: 0.92rem;
   color: var(--text-muted);
   max-width: 420px;
+}
+
+/* Missing Documents Component (Prompt Section 6) */
+.missing-docs-card {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  box-shadow: var(--shadow-card);
+}
+
+.missing-docs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+}
+
+.missing-doc-item {
+  background: var(--bg-card-solid);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  transition: var(--transition-normal);
+  cursor: pointer;
+}
+
+.missing-doc-item:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+  background: #ffffff;
+}
+
+.missing-doc-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.missing-doc-univ {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: var(--tracking-tight);
+  color: var(--text-main);
+  line-height: 1.2;
+}
+
+.missing-doc-program {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.missing-doc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.missing-tag {
+  font-family: var(--font-heading);
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: #ffe4e6;
+  color: #be123c;
+  border: 1px solid #fecdd3;
+  letter-spacing: var(--tracking-snug);
 }
 
 /* Responsive adjustments */
