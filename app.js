@@ -55,18 +55,32 @@
     sortBy: 'deadline-asc'
   };
 
+  let loadedWorkbook = null;
+
+  // Immediate global trigger for import button
+  window.triggerImportExecution = function() {
+    const fi = document.getElementById('file-input-excel');
+    if (loadedWorkbook) {
+      parseAndMergeWorkbook(loadedWorkbook, true, true);
+      const m = document.getElementById('modal-import');
+      if (m) m.classList.remove('active');
+    } else if (fi) {
+      fi.click();
+    }
+  };
+
   // --- INITIALIZATION ---
   function init() {
-    loadProfileFromStorage();
-    loadSentMilestones();
-    initEmailJsSDK();
+    try { loadProfileFromStorage(); } catch (e) { console.error('Init error (profile):', e); }
+    try { loadSentMilestones(); } catch (e) { console.error('Init error (milestones):', e); }
+    try { initEmailJsSDK(); } catch (e) { console.error('Init error (emailjs):', e); }
     
-    loadDataFromStorage();
-    autoTryLoadCollegesExcel();
+    try { loadDataFromStorage(); } catch (e) { console.error('Init error (storage):', e); }
+    try { autoTryLoadCollegesExcel(); } catch (e) { console.error('Init error (excel load):', e); }
     
-    renderApp();
-    checkWeeklyDigestTrigger();
-    setupEventListeners();
+    try { renderApp(); } catch (e) { console.error('Init error (render):', e); }
+    try { checkWeeklyDigestTrigger(); } catch (e) { console.error('Init error (digest):', e); }
+    try { setupEventListeners(); } catch (e) { console.error('Init error (listeners):', e); }
   }
 
   // Default Pre-loaded Seed Applications (Ensures immediate data display even over direct file:// protocol)
@@ -2083,8 +2097,6 @@
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('file-input-excel');
     const confirmBtn = document.getElementById('btn-confirm-import');
-
-    let loadedWorkbook = null;
 
     if (dropZone && fileInput) {
       dropZone.addEventListener('click', (e) => {
