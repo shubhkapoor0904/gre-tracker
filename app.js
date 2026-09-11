@@ -2088,7 +2088,7 @@
 
     if (dropZone && fileInput) {
       dropZone.addEventListener('click', (e) => {
-        if (e.target !== fileInput) {
+        if (e.target !== fileInput && !e.target.closest('button')) {
           fileInput.click();
         }
       });
@@ -2136,7 +2136,6 @@
             if (previewBox) previewBox.style.display = 'block';
             if (filenameEl) filenameEl.textContent = `📁 ${file.name}`;
             if (summaryEl) summaryEl.textContent = `Loaded sheet "${firstSheet}" (~${rowCount} entries). Parsing...`;
-            if (confirmBtn) confirmBtn.disabled = false;
 
             // Instantly parse and import into dashboard
             parseAndMergeWorkbook(loadedWorkbook, true, true);
@@ -2145,8 +2144,6 @@
           } catch (err) {
             console.error('Error reading spreadsheet:', err);
             alert('Failed to parse spreadsheet file: ' + err.message);
-          } finally {
-            if (fileInput) fileInput.value = '';
           }
         };
         reader.readAsArrayBuffer(file);
@@ -2156,18 +2153,24 @@
       }
     }
 
-    // Expose globally for backup access
     window.handleExcelFile = handleExcelFile;
 
+    // Fail-safe global trigger for Parse & Import button
+    window.triggerImportExecution = function() {
+      if (loadedWorkbook) {
+        parseAndMergeWorkbook(loadedWorkbook, true, true);
+        const m = document.getElementById('modal-import');
+        if (m) m.classList.remove('active');
+      } else {
+        const fi = document.getElementById('file-input-excel');
+        if (fi) fi.click();
+      }
+    };
+
     if (confirmBtn) {
-      confirmBtn.addEventListener('click', () => {
-        if (loadedWorkbook) {
-          parseAndMergeWorkbook(loadedWorkbook, true, true);
-          const m = document.getElementById('modal-import');
-          if (m) m.classList.remove('active');
-        } else {
-          alert('Please select an Excel (.xlsx/.xls) or CSV file first.');
-        }
+      confirmBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.triggerImportExecution();
       });
     }
   }
