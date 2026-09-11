@@ -6,7 +6,7 @@
   'use strict';
 
   // --- STORAGE KEYS & INITIAL STATE ---
-  const STORAGE_KEY = 'targetms_applications_v3'; // Bumped key to force fresh deadline calculation
+  const STORAGE_KEY = 'targetms_applications_v4'; // Bumped key to re-parse Excel with exact date rules
   const PROFILE_STORAGE_KEY = 'targetms_user_profile_v1';
   const SENT_MILESTONES_KEY = 'targetms_sent_milestones_v1';
 
@@ -169,7 +169,7 @@
           const buffer = await response.arrayBuffer();
           const workbook = XLSX.read(buffer, { type: 'array' });
           if (workbook && workbook.SheetNames.length > 0) {
-            parseAndMergeWorkbook(workbook, false, true); // replaceMode = true for exact 27 entries
+            parseAndMergeWorkbook(workbook, false, true); // replaceMode = true
           }
         }
       } catch (err) {
@@ -178,7 +178,7 @@
     }
   }
 
-  // --- PARSE EXCEL WORKBOOK (SHEETJS ENGINE) ---
+  // --- PARSE EXCEL WORKBOOK (EXACT ACCURACY ENGINE) ---
   function parseAndMergeWorkbook(workbook, notify = true, replaceMode = false) {
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
@@ -226,8 +226,10 @@
       const feeVal = idxFee !== -1 && row[idxFee] ? parseFloat(row[idxFee]) || 75 : 75;
       const notesVal = idxNotes !== -1 && row[idxNotes] ? String(row[idxNotes]).trim() : '';
 
-      // Format Date
-      let deadlineStr = parseExcelDate(rawDeadline, r);
+      // Parse Date: Extract first date if range, or mark Needs Verification if missing/unclear
+      const dateResult = parseExcelDate(rawDeadline);
+      const deadlineStr = dateResult.dateStr;
+      const verificationStatus = dateResult.verified ? 'Verified' : 'Needs Verification';
 
       const id = 'excel_app_' + Date.now() + '_' + r;
 
@@ -240,9 +242,10 @@
         priority: sanitizePriority(priorityName),
         status: sanitizeStatus(statusName),
         deadline: deadlineStr,
+        rawDeadlineText: dateResult.rawText,
         openingDate: '2026-09-01',
         deadlineType: 'Regular Round',
-        verificationStatus: 'Verified',
+        verificationStatus: verificationStatus,
         officialSourceUrl: '',
         portalUrl: '',
         greRequirement: sanitizeGre(greRule),
@@ -276,49 +279,83 @@
     }
   }
 
-  function parseExcelDate(raw, rowOffset = 1) {
-    if (!raw) {
-      // Stagger dates realistically across Nov 2026 - Feb 2027 if raw missing
-      const months = [11, 11, 0, 1]; // Dec, Dec, Jan, Feb
-      const m = months[rowOffset % months.length];
-      const y = m === 0 || m === 1 ? 2027 : 2026;
-      const d = (rowOffset * 5) % 28 + 1;
-      return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-    }
+  // Exact Date Parsing Engine: Extract first date from range or mark unverified (NO invented dates!)
+  function parseExcelDate(raw) {
+    if (!raw) return { dateStr: '', rawText: '', verified: false };
 
+    // 1. Handle Excel numeric serial dates
     if (typeof raw === 'number') {
-      // Excel serial date integer
       const date = new Date((raw - (25567 + 2)) * 86400 * 1000);
       if (!isNaN(date.getTime())) {
-        return date.toISOString().split('T')[0];
+        let y = date.getFullYear();
+        if (y < 2020) y = 2026;
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return { dateStr: `${y}-${m}-${d}`, rawText: `${y}-${m}-${d}`, verified: true };
       }
     }
 
     const str = String(raw).trim();
-    const parsed = new Date(str);
-    if (!isNaN(parsed.getTime())) {
-      let year = parsed.getFullYear();
-      if (year < 2020) year = 2026; // Fix 2-digit or missing year
-      const month = String(parsed.getMonth() + 1).padStart(2, '0');
-      const day = String(parsed.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
+    if (!str || str.toLowerCase().includes('tbd') || str.toLowerCase().includes('n/a') || str.toLowerCase().includes('unknown')) {
+      return { dateStr: '', rawText: str, verified: false };
     }
 
-    // Check text patterns like "Dec 15", "15 Dec", "December 1"
-    const currentYear = new Date().getFullYear();
-    const match = str.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(\d{1,2})/i);
+    // 2. Tentative Range Extraction: Take the FIRST segment before range delimiters (-, to, /, or, ,)
+    const firstSegment = str.split(/\s*(-|–|to|\/|or|,)\s*/i)[0].trim();
+
+    // 3. Try parsing direct standard JS date string
+    const parsedDirect = new Date(firstSegment);
+    if (!isNaN(parsedDirect.getTime()) && parsedDirect.getFullYear() > 2000) {
+      let year = parsedDirect.getFullYear();
+      if (year < 2020) year = 2026;
+      const month = String(parsedDirect.getMonth() + 1).padStart(2, '0');
+      const day = String(parsedDirect.getDate()).padStart(2, '0');
+      return { dateStr: `${year}-${month}-${day}`, rawText: str, verified: true };
+    }
+
+    // 4. Regex Pattern Matching for Month & Day in text
+    const monthNames = "(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*";
+    
+    // Pattern A: "Dec 1" or "December 15, 2026"
+    const patternA = new RegExp(`${monthNames}\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s+(\\d{4}))?`, "i");
+    // Pattern B: "15 Dec" or "1st December 2026"
+    const patternB = new RegExp(`(\\d{1,2})(?:st|nd|rd|th)?\\s+${monthNames}(?:,?\\s+(\\d{4}))?`, "i");
+
+    let match = str.match(patternA);
+    let monthStr = '', dayStr = '', yearStr = '';
+
     if (match) {
-      const monthMap = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
-      const m = monthMap[match[1].toLowerCase()];
-      const d = parseInt(match[2], 10);
-      let y = currentYear;
-      if (m < 5) y = currentYear + 1; // Spring deadlines in next calendar year
-      const dateObj = new Date(y, m, d);
-      return dateObj.toISOString().split('T')[0];
+      monthStr = match[1];
+      dayStr = match[2];
+      yearStr = match[3];
+    } else {
+      match = str.match(patternB);
+      if (match) {
+        dayStr = match[1];
+        monthStr = match[2];
+        yearStr = match[3];
+      }
     }
 
-    // Fallback date
-    return '2026-12-15';
+    if (monthStr && dayStr) {
+      const monthMap = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+      const m = monthMap[monthStr.toLowerCase().substring(0, 3)];
+      const d = parseInt(dayStr, 10);
+      
+      const currentYear = new Date().getFullYear();
+      let y = yearStr ? parseInt(yearStr, 10) : currentYear;
+      if (!yearStr && m < 5) y = currentYear + 1; // Jan-May falls in next year
+
+      const dateObj = new Date(y, m, d);
+      if (!isNaN(dateObj.getTime())) {
+        const monthPad = String(m + 1).padStart(2, '0');
+        const dayPad = String(d).padStart(2, '0');
+        return { dateStr: `${y}-${monthPad}-${dayPad}`, rawText: str, verified: true };
+      }
+    }
+
+    // 5. Unstated or Unparseable Date: Return empty dateStr & mark unverified (DO NOT INVENT A DATE!)
+    return { dateStr: '', rawText: str, verified: false };
   }
 
   function sanitizePriority(p) {
@@ -350,10 +387,10 @@
 
   // --- CALCULATIONS & LOGIC ENGINES ---
 
-  // 1. Live Countdown Calculator — Always calculates Days Remaining whenever date exists!
+  // 1. Live Countdown Calculator — Exact verification rule
   function calculateDeadlineState(deadlineDateStr, verificationStatus) {
-    if (!deadlineDateStr) {
-      return { days: null, badgeClass: 'badge-unverified', label: 'NO DATE SET' };
+    if (!deadlineDateStr || verificationStatus === 'Needs Verification') {
+      return { days: null, badgeClass: 'badge-unverified', label: 'NEEDS VERIFICATION' };
     }
 
     const today = new Date();
@@ -363,7 +400,7 @@
     deadline.setHours(0, 0, 0, 0);
 
     if (isNaN(deadline.getTime())) {
-      return { days: null, badgeClass: 'badge-unverified', label: 'NO DATE SET' };
+      return { days: null, badgeClass: 'badge-unverified', label: 'NEEDS VERIFICATION' };
     }
 
     const diffMs = deadline - today;
@@ -453,6 +490,15 @@
           desc: `Deadline passed ${Math.abs(deadState.days)} days ago! Please check portal or update status.`
         });
       }
+
+      // Warning 5: Unverified deadline date
+      if (app.verificationStatus === 'Needs Verification') {
+        warnings.push({
+          type: 'warning',
+          title: `🔍 Date Unverified: ${app.university}`,
+          desc: `Deadline was not clearly stated in Excel (${app.rawDeadlineText || 'Unstated'}). Click to verify date!`
+        });
+      }
     });
 
     return warnings;
@@ -506,7 +552,7 @@
       subject: subjectText,
       university_name: app.university,
       program_name: app.program,
-      deadline_date: app.deadline,
+      deadline_date: app.deadline || app.rawDeadlineText || 'Needs Verification',
       days_remaining: deadState.label,
       completion_pct: completion + '%',
       portal_url: app.portalUrl || 'N/A'
@@ -530,7 +576,7 @@
 
   function simulateEmailDispatch(app, recipient, subjectText) {
     const subject = encodeURIComponent(subjectText || `🚨 Deadline Milestone Reminder: ${app.university} (${app.program})`);
-    const body = encodeURIComponent(`Hi ${state.userProfile.name},\n\nStrategy 1 Milestone Alert for ${app.university} - ${app.program}!\n\nDeadline Date: ${app.deadline}\nStatus: ${app.status}\nProgress: ${calculateCompletion(app)}%\nPortal: ${app.portalUrl || 'N/A'}\n\nThis is 1 of your 5 milestone reminders for this university.`);
+    const body = encodeURIComponent(`Hi ${state.userProfile.name},\n\nStrategy 1 Milestone Alert for ${app.university} - ${app.program}!\n\nDeadline Date: ${app.deadline || app.rawDeadlineText || 'Needs Verification'}\nStatus: ${app.status}\nProgress: ${calculateCompletion(app)}%\nPortal: ${app.portalUrl || 'N/A'}\n\nThis is 1 of your 5 milestone reminders for this university.`);
     
     // Open native mailto client or alert
     window.location.href = `mailto:${recipient}?subject=${subject}&body=${body}`;
@@ -595,13 +641,13 @@
   function renderTimeline() {
     const container = document.getElementById('timeline-container');
     
-    // Sort applications by deadline
+    // Sort applications by deadline (verified dates first)
     const sorted = [...state.applications]
       .filter(a => a.deadline)
       .sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
 
     if (sorted.length === 0) {
-      container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem;">No upcoming deadlines scheduled.</p>';
+      container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem;">No verified upcoming deadlines scheduled.</p>';
       return;
     }
 
@@ -658,8 +704,16 @@
 
       return true;
     }).sort((a, b) => {
-      if (state.sortBy === 'deadline-asc') return new Date(a.deadline) - new Date(b.deadline);
-      if (state.sortBy === 'deadline-desc') return new Date(b.deadline) - new Date(a.deadline);
+      if (state.sortBy === 'deadline-asc') {
+        if (!a.deadline) return 1;
+        if (!b.deadline) return -1;
+        return new Date(a.deadline) - new Date(b.deadline);
+      }
+      if (state.sortBy === 'deadline-desc') {
+        if (!a.deadline) return 1;
+        if (!b.deadline) return -1;
+        return new Date(b.deadline) - new Date(a.deadline);
+      }
       if (state.sortBy === 'progress-desc') return calculateCompletion(b) - calculateCompletion(a);
       if (state.sortBy === 'progress-asc') return calculateCompletion(a) - calculateCompletion(b);
       if (state.sortBy === 'priority-desc') {
@@ -705,7 +759,10 @@
   function renderAppCard(app) {
     const deadState = calculateDeadlineState(app.deadline, app.verificationStatus);
     const completion = calculateCompletion(app);
-    const dateFormatted = new Date(app.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const dateFormatted = app.deadline 
+      ? new Date(app.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      : (app.rawDeadlineText || 'Needs Verification');
+    
     const univInitial = app.university.charAt(0);
     const isHighPriority = app.priority === 'High';
 
@@ -783,7 +840,9 @@
   function renderTableRow(app) {
     const deadState = calculateDeadlineState(app.deadline, app.verificationStatus);
     const completion = calculateCompletion(app);
-    const dateFormatted = new Date(app.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const dateFormatted = app.deadline 
+      ? new Date(app.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      : (app.rawDeadlineText || 'Needs Verification');
 
     return `
       <tr>
@@ -833,7 +892,10 @@
     statusBadge.textContent = app.status;
     statusBadge.className = 'badge badge-priority-med';
 
-    document.getElementById('drawer-deadline-val').textContent = new Date(app.deadline).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    const dateFormatted = app.deadline 
+      ? new Date(app.deadline).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+      : (app.rawDeadlineText || 'Needs Verification');
+    document.getElementById('drawer-deadline-val').textContent = dateFormatted;
 
     const countBadge = document.getElementById('drawer-countdown-badge');
     countBadge.textContent = deadState.label;
@@ -999,10 +1061,12 @@
     const prog = document.getElementById('form-program').value.trim();
     const deadline = document.getElementById('form-deadline').value;
 
-    if (!univ || !prog || !deadline) {
-      alert('Please fill in required fields (University, Program, and Deadline Date).');
+    if (!univ || !prog) {
+      alert('Please fill in required fields (University and Program).');
       return;
     }
+
+    const verificationStatus = deadline ? 'Verified' : 'Needs Verification';
 
     if (id) {
       // Edit existing
@@ -1016,7 +1080,7 @@
         app.status = document.getElementById('form-status').value;
         app.deadline = deadline;
         app.deadlineType = document.getElementById('form-deadline-type').value;
-        app.verificationStatus = document.getElementById('form-verification').value;
+        app.verificationStatus = document.getElementById('form-verification').value || verificationStatus;
         app.officialSourceUrl = document.getElementById('form-source-url').value.trim();
         app.portalUrl = document.getElementById('form-portal-url').value.trim();
         app.greRequirement = document.getElementById('form-gre').value;
@@ -1035,9 +1099,10 @@
         priority: document.getElementById('form-priority').value,
         status: document.getElementById('form-status').value,
         deadline: deadline,
+        rawDeadlineText: deadline,
         openingDate: '2026-09-01',
         deadlineType: document.getElementById('form-deadline-type').value,
-        verificationStatus: document.getElementById('form-verification').value,
+        verificationStatus: verificationStatus,
         officialSourceUrl: document.getElementById('form-source-url').value.trim(),
         portalUrl: document.getElementById('form-portal-url').value.trim(),
         greRequirement: document.getElementById('form-gre').value,
@@ -1084,7 +1149,10 @@
   // 1-Click Google Calendar Link Builder
   window.addGCalEvent = function (appId) {
     const app = typeof appId === 'string' ? state.applications.find(a => a.id === appId) : appId;
-    if (!app || !app.deadline) return;
+    if (!app || !app.deadline) {
+      alert('Cannot add to Google Calendar without a verified deadline date. Please edit/verify deadline first!');
+      return;
+    }
 
     const title = encodeURIComponent(`🚨 DEADLINE: ${app.university} — ${app.program}`);
     const details = encodeURIComponent(`Application Deadline for ${app.university} (${app.program}).\nPortal: ${app.portalUrl || 'N/A'}\nSource: ${app.officialSourceUrl || 'N/A'}`);
@@ -1104,7 +1172,10 @@
   // `.ics` iCalendar File Generator
   window.downloadAppIcs = function (appId) {
     const app = state.applications.find(a => a.id === appId);
-    if (!app || !app.deadline) return;
+    if (!app || !app.deadline) {
+      alert('Cannot export .ics calendar without a verified deadline date.');
+      return;
+    }
     generateAndDownloadIcs([app], `${app.university.replace(/\s+/g, '_')}_Deadline.ics`);
   };
 
@@ -1210,7 +1281,7 @@
       Country: app.country,
       Priority: app.priority,
       Status: app.status,
-      Deadline: app.deadline,
+      Deadline: app.deadline || app.rawDeadlineText || 'Needs Verification',
       'Deadline Type': app.deadlineType,
       'GRE Requirement': app.greRequirement,
       'English Test': app.englishRequirement,
@@ -1233,7 +1304,7 @@
     const exportData = state.applications.map(app => ({
       University: app.university,
       Program: app.program,
-      Deadline: app.deadline,
+      Deadline: app.deadline || app.rawDeadlineText || 'Needs Verification',
       Status: app.status,
       Priority: app.priority,
       GRE: app.greRequirement
