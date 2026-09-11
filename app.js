@@ -6,16 +6,17 @@
   'use strict';
 
   // --- STORAGE KEYS & INITIAL STATE ---
-  const STORAGE_KEY = 'targetms_applications_v5'; // Bumped key to re-parse Excel with future intake year rule
+  const STORAGE_KEY = 'targetms_applications_v5';
   const PROFILE_STORAGE_KEY = 'targetms_user_profile_v1';
   const SENT_MILESTONES_KEY = 'targetms_sent_milestones_v1';
+  const LAST_WEEKLY_DIGEST_KEY = 'targetms_last_weekly_digest_v1';
 
   // Default User Profile
   const DEFAULT_USER_PROFILE = {
     name: 'Sarah Jenkins',
     email: 'sarah.gre2026@gmail.com',
     autoEmail: true,
-    emailStrategy: 'milestone', // Strategy 1: Milestone-Based (30d, 14d, 7d, 3d, 1d)
+    emailStrategy: 'weekly_digest', // Weekly Top 7 Approaching Digest
     emailJsService: 'service_targetms',
     emailJsTemplate: 'template_deadline',
     emailJsKey: 'user_targetms_free_key'
@@ -66,7 +67,7 @@
       autoTryLoadCollegesExcel();
     } else {
       renderApp();
-      checkStrategy1Milestones();
+      checkWeeklyDigestTrigger();
     }
 
     setupEventListeners();
@@ -226,7 +227,7 @@
       const feeVal = idxFee !== -1 && row[idxFee] ? parseFloat(row[idxFee]) || 75 : 75;
       const notesVal = idxNotes !== -1 && row[idxNotes] ? String(row[idxNotes]).trim() : '';
 
-      // Parse Date: Extract first date from range & ensure ALL dates are for the FUTURE (advance overdue months without year to next year!)
+      // Parse Date: Extract first date from range & ensure ALL dates are for the FUTURE
       const dateResult = parseExcelDate(rawDeadline);
       const deadlineStr = dateResult.dateStr;
       const verificationStatus = dateResult.verified ? 'Verified' : 'Needs Verification';
@@ -292,7 +293,6 @@
       let date = new Date((raw - (25567 + 2)) * 86400 * 1000);
       if (!isNaN(date.getTime())) {
         date.setHours(0, 0, 0, 0);
-        // If Excel date integer resolves to past, advance year to future intake!
         if (date < today) {
           date.setFullYear(currentYear + (date.getMonth() < today.getMonth() ? 1 : 0));
         }
@@ -362,7 +362,6 @@
       
       let y = yearStr ? parseInt(yearStr, 10) : currentYear;
 
-      // Create candidate date object
       let dateObj = new Date(y, m, d);
       dateObj.setHours(0, 0, 0, 0);
 
@@ -379,7 +378,7 @@
       }
     }
 
-    // 5. Unstated or Unparseable Date: Return empty dateStr & mark unverified (DO NOT INVENT A DATE!)
+    // 5. Unstated or Unparseable Date: Return empty dateStr & mark unverified
     return { dateStr: '', rawText: str, verified: false };
   }
 
@@ -412,7 +411,7 @@
 
   // --- CALCULATIONS & LOGIC ENGINES ---
 
-  // 1. Live Countdown Calculator — Exact verification rule
+  // 1. Live Countdown Calculator
   function calculateDeadlineState(deadlineDateStr, verificationStatus) {
     if (!deadlineDateStr || verificationStatus === 'Needs Verification') {
       return { days: null, badgeClass: 'badge-unverified', label: 'NEEDS VERIFICATION' };
@@ -529,30 +528,114 @@
     return warnings;
   }
 
-  // 4. STRATEGY 1: Milestone-Based Email Dispatcher (30d, 14d, 7d, 3d, 1d)
-  function checkStrategy1Milestones() {
+  // 4. AUTOMATED WEEKLY DIGEST ENGINE (DYNAMICALY HANDLES ANY NUMBER OF VALID DEADLINES)
+  window.getApproachingApps = function (maxLimit = 7) {
+    const valid = state.applications.filter(a => {
+      if (a.status === 'Submitted' || a.status === 'Decision Received') return false;
+      return Boolean(a.deadline || a.rawDeadlineText);
+    });
+
+    valid.sort((a, b) => {
+      if (!a.deadline) return 1;
+      if (!b.deadline) return -1;
+      return new Date(a.deadline) - new Date(b.deadline);
+    });
+
+    return maxLimit ? valid.slice(0, maxLimit) : valid;
+  };
+
+  // Backwards compatibility alias
+  window.getTop7ApproachingApps = function () {
+    return window.getApproachingApps(7);
+  };
+
+  window.sendWeeklyTop7Digest = function (forceManual = false) {
+    const recipient = state.userProfile.email;
+    if (!recipient) {
+      if (forceManual) {
+        alert('Please configure your Notification Recipient Email in the Email Alerts Dashboard first!');
+        document.getElementById('modal-email-center').classList.add('active');
+      }
+      return;
+    }
+
+    const approachingApps = window.getApproachingApps(7);
+    if (approachingApps.length === 0) {
+      if (forceManual) alert('No active upcoming applications found to include in the weekly digest.');
+      return;
+    }
+
+    const appCount = approachingApps.length;
+    const headerTitle = appCount === 1 ? '1 APPROACHING DEADLINE' : `${appCount} APPROACHING DEADLINES`;
+
+    // Format Digest Body
+    let digestSummary = `🎓 TARGETMS WEEKLY DIGEST — ${headerTitle}\n\n`;
+    approachingApps.forEach((app, index) => {
+      const deadState = calculateDeadlineState(app.deadline, app.verificationStatus);
+      const completion = calculateCompletion(app);
+      const displayDeadline = app.deadline || app.rawDeadlineText || 'Needs Verification';
+      digestSummary += `${index + 1}. ${app.university} — ${app.program}\n`;
+      digestSummary += `   📅 Deadline: ${displayDeadline} (${deadState.label})\n`;
+      digestSummary += `   📊 Completion: ${completion}%\n`;
+      digestSummary += `   🔗 Portal: ${app.portalUrl || 'N/A'}\n\n`;
+    });
+
+    const subjectText = appCount === 1 
+      ? `📊 TargetMS Weekly Digest: 1 Approaching Application Deadline`
+      : `📊 TargetMS Weekly Digest: ${appCount} Approaching Application Deadlines`;
+
+    const emailParams = {
+      to_name: state.userProfile.name,
+      to_email: recipient,
+      subject: subjectText,
+      university_name: `${appCount} Approaching Application(s)`,
+      program_name: `Weekly Digest Summary (${new Date().toLocaleDateString()})`,
+      deadline_date: approachingApps[0].deadline || approachingApps[0].rawDeadlineText || 'N/A',
+      days_remaining: calculateDeadlineState(approachingApps[0].deadline, approachingApps[0].verificationStatus).label,
+      completion_pct: calculateCompletion(approachingApps[0]) + '%',
+      portal_url: approachingApps[0].portalUrl || 'N/A'
+    };
+
+    if (window.emailjs && state.userProfile.emailJsKey && state.userProfile.emailJsKey !== 'user_targetms_free_key') {
+      emailjs.send(state.userProfile.emailJsService, state.userProfile.emailJsTemplate, emailParams)
+        .then(() => {
+          localStorage.setItem(LAST_WEEKLY_DIGEST_KEY, new Date().toISOString());
+          alert(`📧 Weekly Digest email successfully sent to ${recipient} (${appCount} application(s) included)!`);
+        })
+        .catch(err => {
+          console.warn('EmailJS error:', err);
+          simulateWeeklyDigestDispatch(recipient, subjectText, digestSummary, appCount);
+        });
+    } else {
+      simulateWeeklyDigestDispatch(recipient, subjectText, digestSummary, appCount);
+    }
+  };
+
+  function simulateWeeklyDigestDispatch(recipient, subjectText, digestSummary, appCount) {
+    const subject = encodeURIComponent(subjectText);
+    const body = encodeURIComponent(`Hi ${state.userProfile.name},\n\nHere is your automated weekly digest of your active approaching graduate application deadlines:\n\n${digestSummary}\nGood luck with your application prep!`);
+    
+    window.location.href = `mailto:${recipient}?subject=${subject}&body=${body}`;
+    localStorage.setItem(LAST_WEEKLY_DIGEST_KEY, new Date().toISOString());
+    alert(`📧 Weekly Digest generated for ${recipient}! (${appCount} application(s) summarized).`);
+  }
+
+  function checkWeeklyDigestTrigger() {
     if (!state.userProfile.autoEmail) return;
 
-    state.applications.forEach(app => {
-      if (app.status === 'Submitted' || app.status === 'Decision Received') return;
+    const lastSentStr = localStorage.getItem(LAST_WEEKLY_DIGEST_KEY);
+    const now = new Date();
 
-      const deadState = calculateDeadlineState(app.deadline, app.verificationStatus);
-      if (deadState.days === null) return;
-
-      // Check if current days remaining is one of the milestone trigger days
-      if (MILESTONE_DAYS.includes(deadState.days)) {
-        const milestoneKey = `${app.id}_${deadState.days}d`;
-        
-        // Ensure this specific milestone email is dispatched EXACTLY ONCE
-        if (!state.sentMilestones[milestoneKey]) {
-          console.log(`[Strategy 1 Milestone Trigger] Dispatching milestone email for ${app.university} (${deadState.days} days remaining)`);
-          
-          window.sendApplicationEmail(app.id, `🚨 Milestone Alert (${deadState.days} Days Remaining): ${app.university}`);
-          state.sentMilestones[milestoneKey] = new Date().toISOString();
-          saveSentMilestones();
-        }
+    if (lastSentStr) {
+      const lastSent = new Date(lastSentStr);
+      const diffDays = (now - lastSent) / (1000 * 60 * 60 * 24);
+      if (diffDays >= 7) {
+        window.sendWeeklyTop7Digest(false);
       }
-    });
+    } else {
+      // First time initialization — send initial weekly digest
+      window.sendWeeklyTop7Digest(false);
+    }
   }
 
   window.sendApplicationEmail = function (appId, customSubject = null) {
@@ -583,29 +666,26 @@
       portal_url: app.portalUrl || 'N/A'
     };
 
-    // If EmailJS SDK loaded, attempt dispatch
     if (window.emailjs && state.userProfile.emailJsKey && state.userProfile.emailJsKey !== 'user_targetms_free_key') {
       emailjs.send(state.userProfile.emailJsService, state.userProfile.emailJsTemplate, emailParams)
         .then(() => {
-          alert(`📧 Strategy 1 Milestone Email sent to ${recipient} for ${app.university}!`);
+          alert(`📧 Email alert sent to ${recipient} for ${app.university}!`);
         })
         .catch(err => {
           console.warn('EmailJS error:', err);
           simulateEmailDispatch(app, recipient, subjectText);
         });
     } else {
-      // 100% Free Direct Simulator & Mailto Fallback
       simulateEmailDispatch(app, recipient, subjectText);
     }
   };
 
   function simulateEmailDispatch(app, recipient, subjectText) {
-    const subject = encodeURIComponent(subjectText || `🚨 Deadline Milestone Reminder: ${app.university} (${app.program})`);
-    const body = encodeURIComponent(`Hi ${state.userProfile.name},\n\nStrategy 1 Milestone Alert for ${app.university} - ${app.program}!\n\nDeadline Date: ${app.deadline || app.rawDeadlineText || 'Needs Verification'}\nStatus: ${app.status}\nProgress: ${calculateCompletion(app)}%\nPortal: ${app.portalUrl || 'N/A'}\n\nThis is 1 of your 5 milestone reminders for this university.`);
+    const subject = encodeURIComponent(subjectText || `🚨 Deadline Reminder: ${app.university} (${app.program})`);
+    const body = encodeURIComponent(`Hi ${state.userProfile.name},\n\nApplication Alert for ${app.university} - ${app.program}!\n\nDeadline Date: ${app.deadline || app.rawDeadlineText || 'Needs Verification'}\nStatus: ${app.status}\nProgress: ${calculateCompletion(app)}%\nPortal: ${app.portalUrl || 'N/A'}`);
     
-    // Open native mailto client or alert
     window.location.href = `mailto:${recipient}?subject=${subject}&body=${body}`;
-    alert(`📧 Strategy 1 Milestone Alert generated for ${recipient}! Default mail client opened with formatted reminder.`);
+    alert(`📧 Alert generated for ${recipient}! Default mail client opened with formatted reminder.`);
   }
 
 
@@ -666,7 +746,7 @@
   function renderTimeline() {
     const container = document.getElementById('timeline-container');
     
-    // Sort applications by deadline (verified dates first)
+    // Sort applications by deadline
     const sorted = [...state.applications]
       .filter(a => a.deadline)
       .sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
@@ -849,7 +929,7 @@
             View Details
           </button>
 
-          <button class="btn btn-accent btn-sm" onclick="window.sendApplicationEmail('${app.id}')" title="Send Milestone Email Alert">
+          <button class="btn btn-accent btn-sm" onclick="window.sendApplicationEmail('${app.id}')" title="Send Email Alert">
             📧 Email
           </button>
           
@@ -1279,12 +1359,11 @@
     state.userProfile.autoEmail = document.getElementById('toggle-auto-email').checked;
     saveProfileToStorage();
     initEmailJsSDK();
-    alert('Strategy 1 Milestone Email settings saved!');
+    alert('Weekly Digest Email settings saved!');
   });
 
   document.getElementById('btn-send-test-email').addEventListener('click', () => {
-    const firstApp = state.applications[0] || { id: 'test', university: 'Purdue University', program: 'MS CS', deadline: '2026-12-01' };
-    window.sendApplicationEmail(firstApp.id, `🚨 Strategy 1 Test Milestone Email: ${firstApp.university}`);
+    window.sendWeeklyTop7Digest(true);
   });
 
   document.getElementById('toggle-auto-email').addEventListener('change', (e) => {
