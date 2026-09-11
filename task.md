@@ -20,3 +20,15 @@
   - [x] Build Export to Excel (`.xlsx`/`.csv`) and JSON Backup/Restore functions
   - [x] Verify UI rendering, interactions, modal flows, and test coverage
   - [x] Create `README.md` user guide and `walkthrough.md`
+- [x] `[6/6] Free Tier Signup/Login Dashboard & Direct Email Notifications`
+  - [x] Add User Authentication (Signup / Login / Profile Pill) Modal and User State Bar in Header
+  - [x] Integrate EmailJS / Direct Email Dispatcher (100% Free Tier, 200 emails/month, 0 cost)
+  - [x] Add "Send Test Email" & "📧 Email" instant reminder buttons to Application Drawer & Dashboard
+  - [x] Implement auto-email dispatch engine for approaching deadlines
+- [x] `[7/7] Vercel Deployment Readiness`
+  - [x] Create `package.json` with scripts for dev, build, start, and preview
+  - [x] Create `vercel.json` with static routing, clean URLs, and asset headers
+  - [x] Create `.gitignore` and `.vercelignore` files
+  - [x] Add Open Graph & Twitter Card social meta tags and SVG favicon in `index.html`
+  - [x] Update `README.md` with Vercel deployment guide
+  - [x] Verify local build and static server execution
